@@ -3,7 +3,7 @@
 <html lang="zh-CN"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eagle 图片自动注释工具 v0.2.1</title>
+    <title>批量重命名注释打标 - MuseAI</title>
     <!-- Material Icons - 本地版本 -->
     <script src="./js/icons.js"></script>
     <style>
@@ -18,32 +18,36 @@
             transform: rotate(180deg) !important;
         }
         
-        /* 自定义滚动条样式 */
+        /* 自定义滚动条样式 - 科技简约 */
         ::-webkit-scrollbar {
-            width: 6px;
+            width: 8px;
         }
         ::-webkit-scrollbar-track {
-            background: #1e293b;
+            background: #f1f5f9;
+            border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb {
-            background: #475569;
-            border-radius: 3px;
+            background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+            border-radius: 4px;
+            border: 2px solid #f1f5f9;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #64748b;
+            background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%);
         }
         
-        /* 简洁的标签页设计 */
+        /* 现代化标签页设计 - 科技简约 */
         .browser-tabs {
             display: flex;
             justify-content: space-between;
-            background: #2c2d30;
-            padding: 8px;
-            margin: 0 0 16px 0;
-            border-radius: 12px;
+            background: #ffffff;
+            padding: 6px;
+            margin: 0 0 20px 0;
+            border-radius: 16px;
             overflow-x: auto;
             scrollbar-width: none;
             -ms-overflow-style: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+            border: 1px solid #e2e8f0;
         }
         .browser-tabs::-webkit-scrollbar {
             display: none;
@@ -53,33 +57,63 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 10px 24px;
-            margin: 0 2px;
+            padding: 12px 20px;
+            margin: 0 3px;
             background: transparent;
-            color: #9ca3af;
+            color: #64748b;
             border: none;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             flex: 1;
             font-size: 14px;
             font-weight: 500;
             white-space: nowrap;
-            border-radius: 8px;
+            border-radius: 12px;
+            position: relative;
+        }
+        
+        .browser-tab::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 12px;
+            padding: 1px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(37, 99, 235, 0.3) 100%);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
         
         .browser-tab:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: #e2e8f0;
+            background: rgba(59, 130, 246, 0.08);
+            color: #3b82f6;
+            transform: translateY(-1px);
+        }
+        
+        .browser-tab:hover::before {
+            opacity: 1;
         }
         
         .browser-tab.active {
-            background: #3a8ffd;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
             color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3), 0 2px 4px rgba(59, 130, 246, 0.2);
+        }
+        
+        .browser-tab.active::before {
+            opacity: 0;
         }
         
         .tab-icon {
-            margin-right: 6px;
+            margin-right: 8px;
             flex-shrink: 0;
+            transition: transform 0.3s ease;
+        }
+        
+        .browser-tab:hover .tab-icon {
+            transform: scale(1.1);
         }
         
         /* 响应式设计：窄屏时隐藏图标 */
@@ -89,15 +123,17 @@
             }
             .browser-tab {
                 flex: 1;
-                padding: 10px 16px;
+                padding: 12px 16px;
             }
         }
         
-        /* 内容区域 */
+        /* 内容区域 - 科技简约 */
         .tab-content-wrapper {
-            background: #2c2d30;
-            border-radius: 12px;
+            background: #ffffff;
+            border-radius: 16px;
             overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+            border: 1px solid #e2e8f0;
         }
         
         /* 简单的加载动画 */
@@ -110,18 +146,30 @@
         
         /* 简单的通知动画 */
         @keyframes fade-in {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from { 
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         @keyframes fade-out {
-            from { opacity: 1; }
-            to { opacity: 0; }
+            from { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to { 
+                opacity: 0;
+                transform: translateY(-10px);
+            }
         }
         .notification {
-            animation: fade-in 0.2s forwards;
+            animation: fade-in 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
         .notification.closing {
-            animation: fade-out 0.3s forwards;
+            animation: fade-out 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
     </style>
     <script type="text/javascript" src="./js/plugin.js"></script>
@@ -132,18 +180,28 @@
             overflow-y: scroll;
         }
         
-        .form-group { margin-bottom: 1rem; }
+        .form-group { 
+            margin-bottom: 1.25rem;
+        }
+        
+        /* 现代化开关设计 - 科技简约 */
         .toggle-switch { 
             appearance: none; 
             width: 3.5rem; 
             height: 1.75rem; 
-            background-color: #334155; 
+            background: #e2e8f0;
             border-radius: 9999px; 
             position: relative; 
             cursor: pointer; 
-            transition: background-color 0.2s; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #cbd5e1;
         }
-        .toggle-switch:checked { background-color: #3a8ffd; }
+        .toggle-switch:checked { 
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+            border-color: transparent;
+        }
         .toggle-switch::before { 
             content: ''; 
             position: absolute; 
@@ -151,96 +209,145 @@
             top: 0.25rem; 
             width: 1.25rem; 
             height: 1.25rem; 
-            background-color: white; 
+            background: #ffffff;
             border-radius: 9999px; 
-            transition: transform 0.2s; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
         }
-        .toggle-switch:checked::before { transform: translateX(1.75rem); }
+        .toggle-switch:checked::before { 
+            transform: translateX(1.75rem);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* 现代化按钮设计 - 科技简约 */
         .btn-primary { 
-            background-color: #3a8ffd; 
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
             color: white; 
-            padding: 0.5rem 1.5rem; 
-            border-radius: 0.5rem; 
-            transition: background-color 0.2s; 
+            padding: 0.625rem 1.75rem; 
+            border-radius: 0.75rem; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             font-weight: 500; 
             border: none;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25), 0 1px 2px rgba(59, 130, 246, 0.15);
+            position: relative;
+            overflow: hidden;
         }
-        .btn-primary:hover { background-color: #2579f8; }
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .btn-primary:hover::before {
+            opacity: 1;
+        }
+        .btn-primary:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35), 0 2px 4px rgba(59, 130, 246, 0.2);
+        }
+        .btn-primary:active {
+            transform: translateY(0);
+        }
         .btn-primary:disabled { 
-            background-color: #475569; 
-            cursor: not-allowed; 
+            background: #cbd5e1;
+            color: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
+        
         .btn-secondary { 
-            background-color: #18161a; 
-            color: #cbd5e1; 
-            padding: 0.5rem 1.5rem; 
-            border-radius: 0.5rem; 
-            transition: background-color 0.2s; 
+            background: #ffffff;
+            color: #475569; 
+            padding: 0.625rem 1.75rem; 
+            border-radius: 0.75rem; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             font-weight: 500; 
-            border: none;
+            border: 1px solid #e2e8f0;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
         }
-        .btn-secondary:hover { background-color: #1f1d21; }
+        .btn-secondary:hover { 
+            background: #f8fafc;
+            color: #3b82f6;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+            border-color: #3b82f6;
+        }
+        
         .btn-test-api { 
-            background-color: #d97706; 
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
             color: white; 
-            padding: 0.5rem 1.5rem; 
-            border-radius: 0.5rem; 
-            transition: all 0.2s ease; 
+            padding: 0.625rem 1.75rem; 
+            border-radius: 0.75rem; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             font-weight: 500; 
             border: none;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
         }
         .btn-test-api:hover { 
-            background-color: #b45309; 
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
         }
         .btn-test-api:disabled { 
-            background-color: #475569; 
+            background: #cbd5e1;
+            color: #94a3b8;
             cursor: not-allowed; 
             transform: none;
             box-shadow: none;
         }
+        
+        /* 现代化状态卡片 - 科技简约 */
         .status-info { 
-            background-color: #0f172a; 
-            color: #818cf8; 
-            border: 1px solid #3a8ffd; 
-            padding: 0.75rem; 
-            border-radius: 0.5rem; 
+            background: rgba(59, 130, 246, 0.08);
+            color: #3b82f6; 
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            padding: 1rem; 
+            border-radius: 0.75rem;
         }
         .status-success { 
-            background-color: #0f172a; 
-            color: #6ee7b7; 
-            border: 1px solid #10b981; 
-            padding: 0.75rem; 
-            border-radius: 0.5rem; 
+            background: rgba(16, 185, 129, 0.08);
+            color: #10b981; 
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            padding: 1rem; 
+            border-radius: 0.75rem;
         }
         .status-error { 
-            background-color: #0f172a; 
-            color: #f87171; 
-            border: 1px solid #ef4444; 
-            padding: 0.75rem; 
-            border-radius: 0.5rem; 
+            background: rgba(239, 68, 68, 0.08);
+            color: #ef4444; 
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 1rem; 
+            border-radius: 0.75rem;
         }
         .status-warning { 
-            background-color: #0f172a; 
-            color: #fbbf24; 
-            border: 1px solid #f59e0b; 
-            padding: 0.75rem; 
-            border-radius: 0.5rem; 
+            background: rgba(245, 158, 11, 0.08);
+            color: #f59e0b; 
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            padding: 1rem; 
+            border-radius: 0.75rem;
         }
-        .tooltip-content { position: absolute; z-index: 1000; }
+        
+        .tooltip-content { 
+            position: absolute; 
+            z-index: 1000;
+            background: #1e293b;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border: 1px solid #334155;
+        }
         .arrow-down { 
             position: absolute; 
             top: 100%; 
@@ -250,21 +357,22 @@
             height: 0; 
             border-left: 4px solid transparent; 
             border-right: 4px solid transparent; 
-            border-top: 4px solid #1f2937; 
+            border-top: 4px solid #1e293b; 
         }
         
-        /* 底部悬浮操作栏样式 */
+        /* 底部悬浮操作栏样式 - 科技简约 */
         .floating-action-bar {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-            border-top: 1px solid #475569;
-            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 0.98);
+            border-top: 1px solid #e2e8f0;
+            box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+            backdrop-filter: blur(20px);
             z-index: 1000;
             transform: translateY(100%);
-            transition: transform 0.3s ease-in-out;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         .floating-action-bar:not(.hidden) {
@@ -275,52 +383,153 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 16px 24px;
+            padding: 20px 24px;
             max-width: 1200px;
             margin: 0 auto;
         }
         
         .btn-primary-small {
-            background-color: #3a8ffd;
+            background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%);
             color: white;
-            padding: 8px 16px;
-            border-radius: 6px;
+            padding: 10px 20px;
+            border-radius: 0.75rem;
             font-size: 14px;
             font-weight: 500;
             border: none;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            transition: all 0.2s ease;
+            gap: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
         }
         
         .btn-primary-small:hover {
-            background-color: #2579f8;
-            transform: translateY(-1px);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5), 0 0 30px rgba(6, 182, 212, 0.3);
         }
         
         .btn-secondary-small {
-            background-color: #475569;
-            color: #cbd5e1;
-            padding: 8px 16px;
-            border-radius: 6px;
+            background: linear-gradient(135deg, rgba(55, 48, 70, 0.6) 0%, rgba(30, 27, 38, 0.6) 100%);
+            color: #c4b5fd;
+            padding: 10px 20px;
+            border-radius: 0.75rem;
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-secondary-small:hover {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(6, 182, 212, 0.2) 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+            border-color: rgba(139, 92, 246, 0.4);
+        }
+        
+        .btn-primary-small {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 0.75rem;
             font-size: 14px;
             font-weight: 500;
             border: none;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            transition: all 0.2s ease;
+            gap: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+        }
+        
+        .btn-primary-small:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+        }
+        
+        .btn-secondary-small {
+            background: #ffffff;
+            color: #475569;
+            padding: 10px 20px;
+            border-radius: 0.75rem;
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid #e2e8f0;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
         }
         
         .btn-secondary-small:hover {
-            background-color: #64748b;
-            transform: translateY(-1px);
+            background: #f8fafc;
+            color: #3b82f6;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+            border-color: #3b82f6;
+        }
+        
+        /* 现代化输入框和选择框样式 - 科技简约 */
+        .modern-input,
+        select.w-full,
+        input[type="text"].w-full,
+        input[type="password"].w-full,
+        input[type="number"].w-full,
+        textarea.w-full {
+            background: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 0.75rem !important;
+            padding: 0.75rem 1rem !important;
+            color: #1e293b !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+        }
+
+        .modern-input:hover,
+        select.w-full:hover,
+        input[type="text"].w-full:hover,
+        input[type="password"].w-full:hover,
+        input[type="number"].w-full:hover,
+        textarea.w-full:hover {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1) !important;
+        }
+
+        .modern-input:focus,
+        select.w-full:focus,
+        input[type="text"].w-full:focus,
+        input[type="password"].w-full:focus,
+        input[type="number"].w-full:focus,
+        textarea.w-full:focus {
+            outline: none !important;
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 2px 4px rgba(59, 130, 246, 0.15) !important;
+        }
+
+        /* 标签样式 */
+        label.block {
+            color: #334155 !important;
+            font-weight: 500 !important;
+            margin-bottom: 0.5rem !important;
+            font-size: 0.875rem !important;
+        }
+
+        /* 帮助文本样式 */
+        p.text-xs.text-slate-400 {
+            color: #64748b !important;
+            font-size: 0.75rem !important;
+            margin-top: 0.5rem !important;
         }
     </style></head>
-<body class="text-slate-300 font-sans antialiased" style="background-color: #18161a;">
+<body class="font-sans antialiased" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); color: #1e293b;">
 
     <div id="app" class="max-w-3xl mx-auto p-4 md:p-6">
 
@@ -338,20 +547,20 @@
                 <div class="tab-icon" id="tab-tags-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"></path>
         </svg></div>
-                标签
+                打标
             </button>
             <button data-tab="model-config" class="browser-tab">
                 <div class="tab-icon" id="tab-model-icon"><svg width="16" height="16" viewBox="0 0 1024 1024" fill="currentColor">
             <path d="M939.733 495.867C733.467 451.6 572.4 290.533 528.133 84.267L512 9.2l-16.533 77.067c-44 204.933-204.267 365.2-409.2 409.2L9.2 512l76.267 16.4c205.466 44.133 366 204.533 410 410l16.4 76.4 15.866-74.133c44.4-206.8 206-368.4 412.8-412.8L1014.667 512l-74.934-16.133z"></path>
         </svg></div>
-                模型
+                大模型
             </button>
 
             <button data-tab="stats" class="browser-tab">
                 <div class="tab-icon" id="tab-stats-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"></path>
         </svg></div>
-                帮助
+                统计
             </button>
         </nav>
 
@@ -359,55 +568,55 @@
             <!-- AI模型配置选项卡 -->
             <div id="model-config-content" class="tab-content hidden space-y-6">
                 <!-- API 配置 -->
-                <div class="p-8 rounded-lg mt-0" style="background-color: #2c2d30;">
-                    <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-                        <span id="ai-config-icon"><svg width="20" height="20" viewBox="0 0 1024 1024" fill="currentColor">
+                <div class="p-8 rounded-2xl mt-0" style="background: #ffffff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);">
+                    <h2 class="text-xl font-semibold mb-6 flex items-center gap-3" style="color: #1e293b;">
+                        <span id="ai-config-icon" style="color: #3b82f6;"><svg width="20" height="20" viewBox="0 0 1024 1024" fill="currentColor">
             <path d="M939.733 495.867C733.467 451.6 572.4 290.533 528.133 84.267L512 9.2l-16.533 77.067c-44 204.933-204.267 365.2-409.2 409.2L9.2 512l76.267 16.4c205.466 44.133 366 204.533 410 410l16.4 76.4 15.866-74.133c44.4-206.8 206-368.4 412.8-412.8L1014.667 512l-74.934-16.133z"></path>
         </svg></span>
-                        模型服务商配置
+                        <span style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">模型服务商配置</span>
                     </h2>
-                    <div id="api-status" class="p-3 rounded-md mb-4 text-sm flex items-center gap-3 bg-amber-900/50 text-amber-400"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg><span><strong>需要配置 API 密钥</strong>（预览模式）</span></div>
+                    <div id="api-status" class="p-4 rounded-xl mb-6 text-sm flex items-center gap-3 bg-amber-900/50 text-amber-400 border border-amber-500/30" style="backdrop-filter: blur(10px);"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg><span><strong>需要配置 API 密钥</strong>（预览模式）</span></div>
 
                     <div class="grid md:grid-cols-2 gap-4">
                         <div class="form-group">
                             <label for="provider" class="block text-sm font-medium mb-1">模型服务商</label>
-                            <select id="provider" class="w-full border border-slate-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none" style="background-color: #18161a;"><option value="alibaba">阿里云百炼</option><option value="volcano">火山方舟</option><option value="zhipu">智谱AI开放平台</option><option value="google">Google AI Studio</option><option value="custom">自定义服务</option></select>
+                            <select id="provider" class="w-full border border-slate-600 rounded-md px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"><option value="alibaba">阿里云百炼</option><option value="volcano">火山方舟</option><option value="zhipu">智谱AI开放平台</option><option value="google">Google AI Studio</option><option value="custom">自定义服务</option></select>
                             <p class="text-xs text-slate-400 mt-1">选择您要使用的AI服务提供商</p>
                         </div>
                         <div class="form-group">
                             <label for="api-key" id="api-key-label" class="block text-sm font-medium mb-1">API 密钥</label>
-                            <input type="password" id="api-key" class="w-full border border-slate-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none" style="background-color: #18161a;" placeholder="请输入 API 密钥...">
+                            <input type="password" id="api-key" class="w-full border border-slate-600 rounded-md px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="请输入 API 密钥...">
                             <p class="text-xs text-slate-400 mt-1" id="api-key-help">请输入您的 API 密钥</p>
                         </div>
                     </div>
                     <div id="api-url-group" class="form-group mt-4 hidden">
                         <label for="api-url" class="block text-sm font-medium mb-1">API 地址</label>
-                        <input type="text" id="api-url" class="w-full border border-slate-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none" style="background-color: #18161a;" placeholder="https://api.example.com/v1/chat/completions">
+                        <input type="text" id="api-url" class="w-full border border-slate-600 rounded-md px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="https://api.example.com/v1/chat/completions">
                         <p class="text-xs text-slate-400 mt-1">自定义 API 服务地址</p>
                     </div>
                 </div>
                 
                 <!-- 模型配置 -->
-                <div class="p-8 rounded-lg" style="background-color: #2c2d30;margin-top: 0px;">
-                    <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                <div class="p-8 rounded-2xl" style="background: #ffffff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); margin-top: 0px;">
+                    <h2 class="text-xl font-semibold mb-6 flex items-center gap-3" style="color: #1e293b;">
                         <span id="model-config-icon"></span>
-                        模型配置
+                        <span style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">模型配置</span>
                     </h2>
                     <div class="grid md:grid-cols-2 gap-4">
                          <div class="form-group">
                             <label for="model" class="block text-sm font-medium mb-1">模型选择</label>
-                            <select id="model" class="w-full border border-slate-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none" style="background-color: #18161a;"><option value="custom">自定义模型...</option></select>
+                            <select id="model" class="w-full border border-slate-600 rounded-md px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"><option value="custom">自定义模型...</option></select>
                             <p class="text-xs text-slate-400 mt-1" id="model-help">请输入自定义模型的 ID 或名称。</p>
                         </div>
                         <div class="form-group">
                             <label for="max-tokens" class="block text-sm font-medium mb-1">最大Token数</label>
-                            <input type="number" id="max-tokens" value="200" min="50" max="2000" class="w-full border border-slate-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none" style="background-color: #18161a;">
+                            <input type="number" id="max-tokens" value="200" min="50" max="2000" class="w-full border border-slate-600 rounded-md px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                              <p class="text-xs text-slate-400 mt-1">控制生成注释的长度</p>
                         </div>
                     </div>
                     <div id="custom-model-group" class="form-group mt-4">
                         <label for="custom-model" class="block text-sm font-medium mb-1">自定义模型名称</label>
-                        <input type="text" id="custom-model" class="w-full border border-slate-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none" style="background-color: #18161a;" placeholder="例如: gpt-4o-vision">
+                        <input type="text" id="custom-model" class="w-full border border-slate-600 rounded-md px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="例如: gpt-4o-vision">
                         <p class="text-xs text-slate-400 mt-1">如果列表中没有您要使用的模型，请在此处输入</p>
                     </div>
                     
@@ -433,33 +642,33 @@
 
 
             <!-- 注释页选项卡 -->
-            <div id="actions-content" class="tab-content p-8 rounded-lg space-y-4" style="background-color: #2c2d30;">
-                <h2 class="text-xl font-semibold text-white flex items-center gap-2">
-                    <span id="home-section-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <div id="actions-content" class="tab-content p-8 rounded-2xl space-y-6" style="background: #ffffff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);">
+                <h2 class="text-xl font-semibold flex items-center gap-3" style="color: #1e293b;">
+                    <span id="home-section-icon" style="color: #3b82f6;"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <path d="M21.99 4c0-1.1-.89-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18zM18 14H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"></path>
         </svg></span>
-                    生成注释
+                    <span style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">批量注释</span>
                 </h2>
                 
                 <!-- 选中图片状态显示 -->
-                <div id="selected-images-status" class="p-4 rounded-lg" style="background-color: #18161a;">
-                    <div class="flex items-center gap-3">
-                        <div class="text-indigo-400" id="selected-images-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <div id="selected-images-status" class="p-6 rounded-xl" style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2);">
+                    <div class="flex items-center gap-4">
+                        <div style="color: #3b82f6;" id="selected-images-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
             <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"></path>
         </svg></div>
-                        <div>
-                            <h3 class="text-lg font-medium text-white">当前选中图片</h3>
-                            <p id="selected-count" class="text-2xl font-bold text-indigo-400">0 张</p>
-                            <p class="text-sm text-slate-400">在 Eagle 中选中图片后可以为其生成注释</p>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold mb-1" style="color: #1e293b;">当前选中图片</h3>
+                            <p id="selected-count" class="text-3xl font-bold mb-2" style="color: #3b82f6;">0 张</p>
+                            <p class="text-sm" style="color: #64748b;">在 Eagle 中选中图片后可以为其生成注释</p>
                         </div>
                     </div>
                 </div>
                 
                 <!-- 批量处理进度显示 -->
-                <div id="manual-progress" class="hidden p-4 rounded-lg" style="background-color: #18161a;">
+                <div id="manual-progress" class="hidden p-4 rounded-lg" style="background: #f8fafc; border: 1px solid #e2e8f0;">
                     <div class="flex items-center justify-between mb-3">
-                        <span class="text-sm text-slate-400">处理进度</span>
-                        <span id="manual-progress-text" class="text-base font-medium text-white">0/0</span>
+                        <span class="text-sm" style="color: #64748b;">处理进度</span>
+                        <span id="manual-progress-text" class="text-base font-medium" style="color: #1e293b;">0/0</span>
                     </div>
                     <div class="w-full bg-gray-600 rounded h-2 overflow-hidden">
                         <div id="manual-progress-fill" class="h-2 bg-blue-500 transition-all duration-300 ease-out" style="width: 0%;"></div>
@@ -498,18 +707,18 @@
                              <div id="settings-card-icon" class="text-slate-400"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"></path>
         </svg></div>
-                             <h3 class="text-lg font-medium text-white">注释生成设置</h3>
+                             <h3 class="text-lg font-medium" style="color: #1e293b;">注释生成设置</h3>
                          </div>
                          <div id="settings-toggle-icon" class="text-slate-400 transform transition-transform duration-200"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="6,9 12,15 18,9"></polyline>
         </svg></div>
                      </button>
                      
-                     <div id="settings-card-content" class="hidden p-6 rounded-lg space-y-4" style="background-color: #2c2d30;">
+                     <div id="settings-card-content" class="hidden p-6 rounded-lg space-y-4" style="background: #f8fafc; border: 1px solid #e2e8f0;">
                          <div id="auto-annotation-wrapper" class="relative">
                              <div class="flex items-center justify-between">
                                  <div>
-                                     <label for="auto-annotation" class="text-sm font-medium text-white">自动为新添加的图片生成注释</label>
+                                     <label for="auto-annotation" class="text-sm font-medium" style="color: #334155;">自动为新添加的图片生成注释</label>
                                      <p class="text-xs text-slate-400">新添加到Eagle素材库的图片将自动生成注释</p>
                                  </div>
                                  <input type="checkbox" id="auto-annotation" class="toggle-switch">
@@ -524,24 +733,24 @@
                              <div id="advanced-options" class="hidden pt-4">
                                  <div class="flex items-center justify-between">
                                      <div>
-                                         <label for="polling-interval-input" class="text-sm font-medium text-white">素材库刷新间隔 (秒)</label>
+                                         <label for="polling-interval-input" class="text-sm font-medium" style="color: #334155;">素材库刷新间隔 (秒)</label>
                                          <p class="text-xs text-slate-400">设置检查新增图片的频率，建议不要太低</p>
                                      </div>
-                                     <input type="number" id="polling-interval-input" min="3" max="300" class="w-24 border border-slate-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none" style="background-color: #18161a;">
+                                     <input type="number" id="polling-interval-input" min="3" max="300" class="w-24 border border-slate-600 rounded-md px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                                  </div>
                              </div>
                          </div>
 
                          <div class="flex items-center justify-between">
                              <div>
-                                 <label for="skip-existing" class="text-sm font-medium text-white">跳过已有注释图片</label>
+                                 <label for="skip-existing" class="text-sm font-medium" style="color: #334155;">跳过已有注释图片</label>
                                  <p class="text-xs text-slate-400">不会覆盖已有注释的图片</p>
                              </div>
                              <input type="checkbox" id="skip-existing" class="toggle-switch">
                          </div>
                          <div class="flex items-center justify-between">
                              <div>
-                                 <label for="skip-processed" class="text-sm font-medium text-white">跳过已处理图片</label>
+                                 <label for="skip-processed" class="text-sm font-medium" style="color: #334155;">跳过已处理图片</label>
                                  <p class="text-xs text-slate-400">不会重复处理同一张图片</p>
                              </div>
                              <input type="checkbox" id="skip-processed" class="toggle-switch">
@@ -550,7 +759,7 @@
                          <!-- 自定义提示词配置 -->
                          <div class="form-group mt-4">
                              <div class="flex items-center justify-between mb-2">
-                                 <label for="custom-prompt" class="block text-sm font-medium text-white">自定义提示词</label>
+                                 <label for="custom-prompt" class="block text-sm font-medium" style="color: #334155;">自定义提示词</label>
                                  <button type="button" id="reset-prompt-btn" class="text-xs text-slate-400 hover:text-indigo-400 transition-colors">
                                      恢复默认
                                  </button>
@@ -603,8 +812,8 @@
             </div>
 
             <!-- 标签页选项卡 -->
-            <div id="tags-content" class="tab-content hidden p-8 rounded-lg space-y-4" style="background-color: #2c2d30;">
-                <h2 class="text-xl font-semibold text-white flex items-center gap-2">
+            <div id="tags-content" class="tab-content hidden p-8 rounded-lg space-y-4" style="background: #ffffff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);">
+                <h2 class="text-xl font-semibold flex items-center gap-2" style="color: #1e293b;">
                     <span id="tags-section-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"></path>
         </svg></span>
@@ -612,15 +821,15 @@
                 </h2>
                 
                 <!-- 选中图片状态显示 -->
-                <div id="tags-selected-images-status" class="p-4 rounded-lg" style="background-color: #18161a;">
+                <div id="tags-selected-images-status" class="p-4 rounded-lg" style="background: #f8fafc; border: 1px solid #e2e8f0;">
                     <div class="flex items-center gap-3">
-                        <div class="text-green-400" id="tags-selected-images-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <div style="color: #3b82f6;" id="tags-selected-images-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
             <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"></path>
         </svg></div>
                         <div>
-                            <h3 class="text-lg font-medium text-white">当前选中图片</h3>
-                            <p id="tags-selected-count" class="text-2xl font-bold text-green-400">0 张</p>
-                            <p class="text-sm text-slate-400">在 Eagle 中选中图片后可以为其匹配标签</p>
+                            <h3 class="text-lg font-medium" style="color: #1e293b;">当前选中图片</h3>
+                            <p id="tags-selected-count" class="text-2xl font-bold" style="color: #3b82f6;">0 张</p>
+                            <p class="text-sm" style="color: #64748b;">在 Eagle 中选中图片后可以为其匹配标签</p>
                         </div>
                     </div>
                 </div>
@@ -665,7 +874,7 @@
         </svg></div>
                     </button>
                     
-                    <div id="tags-settings-card-content" class="hidden p-6 rounded-lg space-y-4" style="background-color: #2c2d30;">
+                    <div id="tags-settings-card-content" class="hidden p-6 rounded-lg space-y-4" style="background: #f8fafc; border: 1px solid #e2e8f0;">
                         <!-- 自动标签匹配开关 -->
                         <div id="auto-tags-wrapper" class="relative">
                             <div class="flex items-center justify-between">
@@ -694,7 +903,7 @@
                         </div>
 
                         <!-- Eagle标签库显示 -->
-                        <div class="p-4 rounded-lg" style="background-color: #18161a;">
+                        <div class="p-4 rounded-lg" style="background: #f8fafc; border: 1px solid #e2e8f0;">
                             <div class="flex items-center justify-between mb-3">
                                 <h3 class="text-sm font-medium text-white">Eagle标签库</h3>
                                 <div class="flex items-center gap-2">
@@ -709,7 +918,7 @@
                             <div class="mb-3">
                                 <input type="text" id="tags-search-input" placeholder="搜索标签..." 
                                        class="w-full border border-slate-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none" 
-                                       style="background-color: #2c2d30;">
+                                       style="background: #ffffff; border: 1px solid #e2e8f0; color: #1e293b;">
                             </div>
                             
                             <!-- 标签列表容器 -->
@@ -784,27 +993,27 @@
 
             <!-- 运行状态选项卡 -->
             <div id="stats-content" class="tab-content hidden space-y-6">
-                <div class="p-8 rounded-lg" style="background-color: #2c2d30;">
-                    <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                <div class="p-8 rounded-lg" style="background: #ffffff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center gap-2" style="color: #1e293b;">
                         <span id="stats-icon"></span>
                         使用统计
                     </h2>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                        <div class="p-4 rounded-lg" style="background-color: #18161a;">
-                            <div id="input-tokens" class="text-2xl font-bold text-blue-400">0</div>
-                            <div class="text-sm text-slate-400">累计消耗输入 Token</div>
+                        <div class="p-4 rounded-lg" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                            <div id="input-tokens" class="text-2xl font-bold" style="color: #3b82f6;">0</div>
+                            <div class="text-sm" style="color: #64748b;">累计消耗输入 Token</div>
                         </div>
-                        <div class="p-4 rounded-lg" style="background-color: #18161a;">
-                            <div id="output-tokens" class="text-2xl font-bold text-green-400">0</div>
-                            <div class="text-sm text-slate-400">累计消耗输出 Token</div>
+                        <div class="p-4 rounded-lg" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                            <div id="output-tokens" class="text-2xl font-bold" style="color: #10b981;">0</div>
+                            <div class="text-sm" style="color: #64748b;">累计消耗输出 Token</div>
                         </div>
-                        <div class="p-4 rounded-lg" style="background-color: #18161a;">
-                            <div id="processed-count" class="text-2xl font-bold text-indigo-400">0</div>
-                            <div class="text-sm text-slate-400">已处理图片</div>
+                        <div class="p-4 rounded-lg" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                            <div id="processed-count" class="text-2xl font-bold" style="color: #3b82f6;">0</div>
+                            <div class="text-sm" style="color: #64748b;">已处理图片</div>
                         </div>
-                        <div class="p-4 rounded-lg" style="background-color: #18161a;">
-                            <div id="requests-count" class="text-2xl font-bold text-indigo-400">0</div>
-                            <div class="text-sm text-slate-400">API 调用次数</div>
+                        <div class="p-4 rounded-lg" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                            <div id="requests-count" class="text-2xl font-bold" style="color: #10b981;">0</div>
+                            <div class="text-sm" style="color: #64748b;">API 调用次数</div>
                         </div>
                     </div>
                      <div class="mt-4 flex justify-between items-center">
@@ -815,9 +1024,9 @@
                         </button>
                     </div>
                 </div>
-                 <div class="p-8 rounded-lg" style="background-color: #2c2d30;">
+                 <!-- <div class="p-8 rounded-lg" style="background: #ffffff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);">
                      <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold text-white flex items-center gap-2">
+                        <h2 class="text-xl font-semibold flex items-center gap-2" style="color: #1e293b;">
                             <span id="debug-icon"></span>
                             调试日志
                         </h2>
@@ -830,18 +1039,18 @@
                     <div id="debug-panel" class="hidden">
                         <div id="debug-log" class="bg-slate-950 p-3 rounded-md font-mono text-xs h-48 overflow-y-auto text-slate-400 whitespace-pre-wrap"></div>
                     </div>
-                </div>
+                </div> -->
                 
                 <!-- 使用教程 -->
-                <div class="p-8 rounded-lg" style="background-color: #2c2d30;">
-                    <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                <!-- <div class="p-8 rounded-lg" style="background: #ffffff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center gap-2" style="color: #1e293b;">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/>
                         </svg>
                         使用教程
                     </h2>
-                    <div class="p-4 rounded-lg" style="background-color: #18161a;">
-                        <p class="text-slate-300 mb-4">需要帮助？查看详细的使用教程，了解如何配置和使用插件。</p>
+                    <div class="p-4 rounded-lg" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                        <p class="mb-4" style="color: #475569;">需要帮助？查看详细的使用教程，了解如何配置和使用插件。</p>
                         <button id="open-tutorial-btn" class="btn-primary inline-flex items-center gap-2">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M14,3V5H17.59L7.76,14.83L9.17,16.24L19,6.41V10H21V3M19,19H5V5H12V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V12H19V19Z"/>
@@ -849,7 +1058,7 @@
                             查看使用教程
                         </button>
                     </div>
-                </div>
+                </div> -->
             </div>
 
         </main>
