@@ -1,0 +1,5 @@
+{
+  "name": "Eagle AI Tagger",
+  "description": "AI-powered image annotation and tagging plugin for Eagle, featuring template management and automatic processing.",
+  "requestFramePermissions": []
+}
