@@ -1,21 +1,21 @@
 {
     "id": "bbada62d-cc61-4b5c-bba3-b116af67d638",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "platform": "all",
     "arch": "all",
     "name": "批量重命名注释打标 - MuseAI",
     "description": "使用AI大模型为Eagle中的图片批量重命名、注释、打标签",
     "logo": "/logo.png",
-    "keywords": ["AI", "图片", "注释", "自动", "GPT", "图像理解"],
+    "keywords": ["AI", "图片", "注释", "自动", "GPT", "图像理解", "标签", "重命名"],
     "devTools": false,
     "main": {
-        "serviceMode": true,
+        "serviceMode": false,
         "url": "index.html",
-        "width": 640,
-        "height": 600,
+        "width": 900,
+        "height": 700,
         "resizable": true,
-        "minWidth": 500,
-        "minHeight": 400
+        "minWidth": 800,
+        "minHeight": 600
     },
     "permissions": [
         "image.read",
