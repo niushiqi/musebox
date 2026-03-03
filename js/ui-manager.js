@@ -18,6 +18,9 @@ const uiState = {
 function initializeUI() {
     console.log('初始化 UI...');
     
+    // 检查 API 配置
+    checkAPIConfigurationUI();
+    
     // 标签页切换
     setupTabSwitching();
     
@@ -42,6 +45,39 @@ function initializeUI() {
     refreshImageList();
     
     console.log('UI 初始化完成');
+}
+
+// 检查 API 配置状态
+function checkAPIConfigurationUI() {
+    if (!window.eagleAutoAnnotation) return;
+    
+    const { pluginConfig } = window.eagleAutoAnnotation;
+    const currentProvider = pluginConfig.provider;
+    const apiKey = pluginConfig.apiKeys[currentProvider];
+    
+    const apiWarning = document.getElementById('apiWarning');
+    const imageStatusCard = document.getElementById('imageStatusCard');
+    const controlPanel = document.querySelector('.control-panel');
+    
+    if (!apiKey) {
+        // 显示警告
+        if (apiWarning) apiWarning.style.display = 'flex';
+        // 禁用控制面板
+        if (imageStatusCard) imageStatusCard.style.opacity = '0.5';
+        if (controlPanel) {
+            controlPanel.style.opacity = '0.5';
+            controlPanel.style.pointerEvents = 'none';
+        }
+    } else {
+        // 隐藏警告
+        if (apiWarning) apiWarning.style.display = 'none';
+        // 启用控制面板
+        if (imageStatusCard) imageStatusCard.style.opacity = '1';
+        if (controlPanel) {
+            controlPanel.style.opacity = '1';
+            controlPanel.style.pointerEvents = 'auto';
+        }
+    }
 }
 
 // 标签页切换
@@ -671,5 +707,29 @@ window.resetSettings = resetSettings;
 window.testAPIConnection = testAPIConnection;
 window.previewTemplate = previewTemplate;
 window.refreshImageList = refreshImageList;
+window.navigateToAPISettings = navigateToAPISettings;
+
+// 导航到 API 设置并高亮
+function navigateToAPISettings() {
+    // 切换到设置页面
+    switchTab('settings');
+    
+    // 延迟一下让页面切换完成
+    setTimeout(() => {
+        const aiConfigSection = document.getElementById('aiConfigSection');
+        if (aiConfigSection) {
+            // 添加高亮类
+            aiConfigSection.classList.add('highlight');
+            
+            // 滚动到该区域
+            aiConfigSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            
+            // 2次动画后移除高亮类（每次2秒，共4秒）
+            setTimeout(() => {
+                aiConfigSection.classList.remove('highlight');
+            }, 4000);
+        }
+    }, 100);
+}
 
 console.log('UI Manager 初始化完成');
