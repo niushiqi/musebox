@@ -1990,6 +1990,11 @@ function showNotification(message, type = 'info') {
     }, 3000);
 }
 
+// 调试日志函数
+function addDebugLog(message) {
+    console.log(`[Debug] ${message}`);
+}
+
 // 设置UI界面
 function setupUI() {
     // 这个函数将在HTML中实现
