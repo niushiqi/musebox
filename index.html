@@ -70,9 +70,9 @@
                         </div>
                         <div class="status-info">
                             <h2>已选中 <span id="imageCount">0</span> 张图片</h2>
-                            <p>准备在 Eagle 中处理</p>
+                            <p id="imageStatusText">请在eagle中至少选择一张图片</p>
                         </div>
-                        <button class="icon-btn" onclick="refreshImageList()" title="刷新选中状态">
+                        <button class="icon-btn" onclick="refreshImageListWithAnimation(this)" title="刷新选中状态">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
                             </svg>

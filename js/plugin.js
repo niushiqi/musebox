@@ -227,11 +227,48 @@ function updateSelectedTemplate(type) {
         return;
     }
     
-    const selectedId = selector.value;
-    if (selectedId) {
+    const selectedValue = selector.value;
+    
+    // 检查是否选择了"添加模板"选项
+    if (selectedValue === 'add-template') {
+        // 跳转到模板管理页面
+        if (typeof switchTab === 'function') {
+            switchTab('templates');
+        } else if (window.switchTab) {
+            window.switchTab('templates');
+        }
+        
+        // 延迟一下让页面切换完成
+        setTimeout(() => {
+            // 切换到对应的模板类型标签页
+            if (window.switchTemplateTab) {
+                window.switchTemplateTab(type);
+            }
+            
+            // 再延迟一下创建新模板
+            setTimeout(() => {
+                if (window.createNewTemplate) {
+                    window.createNewTemplate();
+                }
+            }, 200);
+        }, 100);
+        
+        // 重置选择器到之前的值
+        const activeId = window.eagleAutoAnnotation.pluginConfig.activeTemplateIds[type];
+        if (activeId) {
+            selector.value = activeId;
+        } else {
+            selector.selectedIndex = 0;
+        }
+        
+        return;
+    }
+    
+    // 正常的模板选择逻辑
+    if (selectedValue) {
         try {
-            window.eagleAutoAnnotation.setActiveTemplate(type, selectedId);
-            console.log(`已设置 ${type} 的激活模板:`, selectedId);
+            window.eagleAutoAnnotation.setActiveTemplate(type, selectedValue);
+            console.log(`已设置 ${type} 的激活模板:`, selectedValue);
         } catch (error) {
             console.error(`设置激活模板失败:`, error);
         }
@@ -281,6 +318,16 @@ function updateTemplateSelectors() {
                 }
                 selector.appendChild(option);
             });
+        }
+        
+        // 添加"添加模板"选项（仅对注释模板）
+        if (type === 'annotation') {
+            const addOption = document.createElement('option');
+            addOption.value = 'add-template';
+            addOption.textContent = '+ 添加模板';
+            addOption.style.color = '#3b82f6';
+            addOption.style.fontWeight = '500';
+            selector.appendChild(addOption);
         }
     });
 }
@@ -3040,7 +3087,7 @@ function renderTemplateList() {
             <div class="template-item-header">
                 <div class="template-item-name">${template.name}</div>
                 <div class="template-item-actions">
-                    ${template.id === activeId ? '<div class="template-default-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>默认</div>' : ''}
+                    ${template.id === activeId ? '<div class="template-default-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>使用中</div>' : ''}
                     ${!template.isDefault ? `<button class="template-item-btn delete" onclick="deleteTemplateConfirm('${template.id}')" title="删除"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="m19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>` : ''}
                 </div>
             </div>

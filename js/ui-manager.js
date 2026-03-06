@@ -194,12 +194,22 @@ async function refreshImageList() {
         // 更新计数（两个位置）
         const countElement = document.getElementById('imageCount');
         const previewCountElement = document.getElementById('previewCount');
+        const statusTextElement = document.getElementById('imageStatusText');
         
         if (countElement) {
             countElement.textContent = uiState.images.length;
         }
         if (previewCountElement) {
             previewCountElement.textContent = uiState.images.length;
+        }
+        
+        // 更新状态文案
+        if (statusTextElement) {
+            if (uiState.images.length === 0) {
+                statusTextElement.textContent = '请在eagle中至少选择一张图片';
+            } else {
+                statusTextElement.textContent = '准备在 Eagle 中处理';
+            }
         }
         
         // 渲染网格
@@ -729,11 +739,15 @@ function previewTemplate(type) {
             <label style="display: block; font-size: 14px; font-weight: 500; color: #374151; margin-bottom: 8px;">提示词内容</label>
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; font-family: monospace; font-size: 13px; line-height: 1.6; white-space: pre-wrap; max-height: 300px; overflow-y: auto;">${template.prompt}</div>
         </div>
-        <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px;">
+        <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
             <div style="font-size: 12px; font-weight: 600; color: #0369a1; margin-bottom: 8px;">💡 使用提示</div>
             <div style="font-size: 13px; color: #0c4a6e; line-height: 1.5;">
                 ${getTemplateUsageTip(type)}
             </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 12px;">
+            <button onclick="this.closest('[style*=fixed]').remove()" style="padding: 8px 16px; border: 1px solid #d1d5db; background: white; color: #374151; border-radius: 6px; cursor: pointer; font-size: 14px;">关闭</button>
+            <button onclick="editTemplate('${type}', '${template.id}'); this.closest('[style*=fixed]').remove();" style="padding: 8px 16px; border: none; background: #3b82f6; color: white; border-radius: 6px; cursor: pointer; font-size: 14px;">编辑模板</button>
         </div>
     `;
     
@@ -833,3 +847,60 @@ function navigateToAPISettings() {
 }
 
 console.log('UI Manager 初始化完成');
+// 编辑模板
+function editTemplate(type, templateId) {
+    // 切换到模板管理页面
+    if (typeof switchTab === 'function') {
+        switchTab('templates');
+    } else if (window.switchTab) {
+        window.switchTab('templates');
+    }
+    
+    // 延迟一下让页面切换完成
+    setTimeout(() => {
+        // 切换到对应的模板类型标签页
+        if (window.switchTemplateTab) {
+            window.switchTemplateTab(type);
+        }
+        
+        // 再延迟一下选中对应的模板
+        setTimeout(() => {
+            if (window.selectTemplate) {
+                window.selectTemplate(templateId);
+            }
+        }, 200);
+    }, 100);
+}
+
+// 导出函数供全局使用
+window.editTemplate = editTemplate;
+// 带动画的刷新图片列表
+async function refreshImageListWithAnimation(button) {
+    // 添加旋转动画
+    button.classList.add('refreshing');
+    button.disabled = true;
+    
+    try {
+        await refreshImageList();
+        
+        // 显示成功提示
+        if (window.showNotification) {
+            window.showNotification(`已刷新，当前选中 ${uiState.images.length} 张图片`, 'success');
+        }
+        
+    } catch (error) {
+        console.error('刷新失败:', error);
+        if (window.showNotification) {
+            window.showNotification('刷新失败，请重试', 'error');
+        }
+    } finally {
+        // 移除动画并恢复按钮
+        setTimeout(() => {
+            button.classList.remove('refreshing');
+            button.disabled = false;
+        }, 500); // 延迟一下让用户看到动画效果
+    }
+}
+
+// 导出函数供全局使用
+window.refreshImageListWithAnimation = refreshImageListWithAnimation;
