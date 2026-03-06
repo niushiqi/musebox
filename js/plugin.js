@@ -512,70 +512,32 @@ function initializePlugin() {
 function resetToDefaultConfig() {
     console.log('🔄 重置为默认配置...');
     
-    // 重置插件配置
-    pluginConfig.provider = 'volcano';
-    pluginConfig.maxTokens = 200;
-    pluginConfig.apiKeys = {
-        volcano: '',
-        alibaba: '',
-        google: '',
-        zhipu: '',
-        custom: ''
-    };
-    pluginConfig.apiUrls = {
-        volcano: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
-        alibaba: 'https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
-        google: 'https://generativelanguage.googleapis.com/v1beta/models',
-        zhipu: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
-        custom: ''
-    };
-    pluginConfig.models = {
-        volcano: 'doubao-seed-1-6-250615',
-        alibaba: 'qwen-vl-max-latest',
-        google: 'gemini-2.5-flash',
-        zhipu: 'GLM-4.5V',
-        custom: ''
-    };
-    pluginConfig.customModels = {};
-    
-    // 重置模板数据
-    pluginConfig.templates = [];
-    pluginConfig.activeTemplateIds = {
-        annotation: '',
-        tag: '',
-        rename: ''
-    };
-    
-    // 重置插件状态
-    pluginState.settings.autoAnnotation = false;
-    pluginState.settings.manualAnnotation = true;
-    pluginState.settings.apiConfigured = false;
-    pluginState.settings.skipExistingAnnotations = true;
-    pluginState.settings.skipProcessedImages = true;
-    pluginState.processedImages.clear();
-    pluginState.processingQueue = []; // 清空处理队列
-    pluginState.isProcessing = false; // 重置处理状态
-    pluginState.tokenUsage = {
-        totalTokens: 0,
-        totalInputTokens: 0,
-        totalOutputTokens: 0,
-        totalCost: 0,
-        requests: 0,
-        lastRequest: null
-    };
-    
-    // 清空本地存储
+    // 清空所有本地存储
     try {
         localStorage.removeItem('eagleAutoAnnotationConfig');
         localStorage.removeItem('eagleAutoAnnotationTokenUsage');
-        localStorage.removeItem('eagleAutoAnnotationTokenStats'); // 清空统计数据
+        localStorage.removeItem('eagleAutoAnnotationTokenStats');
         localStorage.removeItem('eaglePluginBackgroundTest');
-        console.log('🗺️ 本地存储数据已清空');
+        console.log('✅ 本地存储已清空');
     } catch (error) {
         console.warn('⚠️ 清空本地存储时出错:', error);
     }
     
-    console.log('✅ 默认配置重置完成');
+    // 提示用户重启插件
+    if (window.showNotification) {
+        window.showNotification('配置已重置，请重新打开插件生效', 'success');
+    }
+    
+    // 延迟关闭插件窗口
+    setTimeout(() => {
+        if (typeof eagle !== 'undefined' && eagle.onPluginHide) {
+            eagle.onPluginHide();
+        }
+        // 尝试关闭当前窗口
+        if (window.close) {
+            window.close();
+        }
+    }, 2000);
 }
 
 // 检查API配置
@@ -2264,36 +2226,34 @@ function updateSelectedImagesUI(imageData) {
 
 // 重置为默认配置
 function resetToDefaultConfig() {
-    pluginConfig.provider = 'openai';
-    pluginConfig.apiKeys = {
-        openai: '',
-        volcano: '',
-        alibaba: '',
-        google: '',
-        custom: ''
-    };
-    pluginConfig.apiUrls = {
-        openai: 'https://api.openai.com/v1/chat/completions',
-        volcano: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
-        alibaba: 'https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
-        google: 'https://generativelanguage.googleapis.com/v1beta/models',
-        custom: ''
-    };
-    pluginConfig.models = {
-        openai: 'gpt-4-vision-preview',
-        volcano: 'doubao-pro-128k',
-        alibaba: 'qwen-vl-max-latest',
-        google: 'gemini-2.5-flash',
-        custom: ''
-    };
-    pluginConfig.maxTokens = 200;
-    pluginConfig.customModels = {};
-    pluginState.settings.apiConfigured = false;
-    pluginState.settings.autoAnnotation = false;
-    pluginState.settings.manualAnnotation = true;
-    pluginState.settings.skipExistingAnnotations = true;
-    pluginState.settings.skipProcessedImages = true;
-    console.log('已重置为默认配置');
+    console.log('🔄 重置为默认配置...');
+    
+    // 清空所有本地存储
+    try {
+        localStorage.removeItem('eagleAutoAnnotationConfig');
+        localStorage.removeItem('eagleAutoAnnotationTokenUsage');
+        localStorage.removeItem('eagleAutoAnnotationTokenStats');
+        localStorage.removeItem('eaglePluginBackgroundTest');
+        console.log('✅ 本地存储已清空');
+    } catch (error) {
+        console.warn('⚠️ 清空本地存储时出错:', error);
+    }
+    
+    // 提示用户重启插件
+    if (window.showNotification) {
+        window.showNotification('配置已重置，请重新打开插件生效', 'success');
+    }
+    
+    // 延迟关闭插件窗口
+    setTimeout(() => {
+        if (typeof eagle !== 'undefined' && eagle.onPluginHide) {
+            eagle.onPluginHide();
+        }
+        // 尝试关闭当前窗口
+        if (window.close) {
+            window.close();
+        }
+    }, 2000);
 }
 
 // 保存配置
