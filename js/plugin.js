@@ -312,34 +312,7 @@ const pluginConfig = {
     },
     maxTokens: 200, // 注释最大长度
     autoAnnotation: false, // 是否启用自动注释
-    customModels: {}, // 自定义模型配置 {provider: {models: []}}
-    customPrompt: `你是一位专业的数字资产管理员，你的任务是为 Eagle 素材库中的图片生成一段生动的描述和一组精确的关键词（标签），以实现高效的搜索和分类。
-
-请严格按照以下格式为我提供的图片生成内容：
-
-**描述：**
-[在这里用 2-3 句话生动地描述图片。内容应包括：画面的核心主体、整体风格、构图方式、色调与光影，以及传递出的氛围或情感。]
-
-**标签：**
-[在这里列出 10-15 个相关的关键词，用逗号「,」分隔。关键词应涵盖：
-- **核心对象/场景:** (例如: 猫, 城市, 森林, UI界面)
-- **风格流派:** (例如: 赛博朋克, 水彩, 扁平插画, 摄影, 3D渲染)
-- **构图/视角:** (例如: 特写, 远景, 对称, 俯视)
-- **颜色色调:** (例如: 蓝色, 暖色调, 高对比度, 莫兰迪色)
-- **氛围/情感:** (例如: 宁静, 活力, 神秘, 复古)
-- **用途/概念:** (例如: 网站背景, 角色参考, LOGO灵感, 海报设计)]
-
----
-
-**这是一个优秀的范例：**
-
-**图片内容:** 一张赛博朋克风格的城市夜景插画，视角从低处仰望，街道上霓虹灯闪烁，空中有点缀的飞行器。
-**AI应输出:**
-**描述：**
-一张充满未来感的赛博朋克城市夜景插画。画面采用低角度仰视构图，突显了摩天大楼的宏伟。深蓝色与紫色的主色调中，穿插着明亮的粉色和青色霓虹灯，营造出一种神秘、繁华又略带迷幻的氛围。光影对比强烈，细节丰富，展现了一个科技高度发达的未来世界。
-**标签：**
-赛博朋克, 城市夜景, 插画, 未来科技, 霓虹灯, 街道, 摩天大楼, 飞行器, 紫色, 蓝色, 低角度, 科幻, 概念艺术, 游戏背景, 赛博美学`, // 自定义提示词
-    
+    customModels: {}, // 自定义模型配置 {provider: {models: []}} 
     // 模板管理
     templates: [], // 模板列表
     activeTemplateIds: { // 当前激活的模板ID
@@ -682,32 +655,6 @@ function checkAPIConfiguration() {
             
             pluginConfig.maxTokens = config.maxTokens || 200;
             pluginConfig.customModels = config.customModels || {};
-            pluginConfig.customPrompt = config.customPrompt || `你是一位专业的数字资产管理员，你的任务是为 Eagle 素材库中的图片生成一段生动的描述和一组精确的关键词（标签），以实现高效的搜索和分类。
-
-请严格按照以下格式为我提供的图片生成内容：
-
-**描述：**
-[在这里用 2-3 句话生动地描述图片。内容应包括：画面的核心主体、整体风格、构图方式、色调与光影，以及传递出的氛围或情感。]
-
-**标签：**
-[在这里列出 10-15 个相关的关键词，用逗号「,」分隔。关键词应涵盖：
-- **核心对象/场景:** (例如: 猫, 城市, 森林, UI界面)
-- **风格流派:** (例如: 赛博朋克, 水彩, 扁平插画, 摄影, 3D渲染)
-- **构图/视角:** (例如: 特写, 远景, 对称, 俯视)
-- **颜色色调:** (例如: 蓝色, 暖色调, 高对比度, 莫兰迪色)
-- **氛围/情感:** (例如: 宁静, 活力, 神秘, 复古)
-- **用途/概念:** (例如: 网站背景, 角色参考, LOGO灵感, 海报设计)]
-
----
-
-**这是一个优秀的范例：**
-
-**图片内容:** 一张赛博朋克风格的城市夜景插画，视角从低处仰望，街道上霓虹灯闪烁，空中有点缀的飞行器。
-**AI应输出:**
-**描述：**
-一张充满未来感的赛博朋克城市夜景插画。画面采用低角度仰视构图，突显了摩天大楼的宏伟。深蓝色与紫色的主色调中，穿插着明亮的粉色和青色霓虹灯，营造出一种神秘、繁华又略带迷幻的氛围。光影对比强烈，细节丰富，展现了一个科技高度发达的未来世界。
-**标签：**
-赛博朋克, 城市夜景, 插画, 未来科技, 霓虹灯, 街道, 摩天大楼, 飞行器, 紫色, 蓝色, 低角度, 科幻, 概念艺术, 游戏背景, 赛博美学`;
             
             // 加载模板数据
             if (config.templates && Array.isArray(config.templates)) {
@@ -1529,44 +1476,14 @@ async function generateImageAnnotation(imageData) {
 }
 
 // 构建API请求数据
-function buildAPIRequest(provider, imageBase64, model, customPrompt = null) {
-    // 使用自定义提示词，如果没有设置则使用当前激活的注释模板
-    let prompt = customPrompt;
-    
-    if (!prompt) {
-        const activeTemplate = getActiveTemplate('annotation');
-        if (activeTemplate && activeTemplate.prompt) {
-            prompt = activeTemplate.prompt;
-        } else {
-            // 如果没有激活模板，使用默认提示词
-            prompt = pluginConfig.customPrompt || `你是一位专业的数字资产管理员，你的任务是为 Eagle 素材库中的图片生成一段生动的描述和一组精确的关键词（标签），以实现高效的搜索和分类。
-
-请严格按照以下格式为我提供的图片生成内容：
-
-**描述：**
-[在这里用 2-3 句话生动地描述图片。内容应包括：画面的核心主体、整体风格、构图方式、色调与光影，以及传递出的氛围或情感。]
-
-**标签：**
-[在这里列出 10-15 个相关的关键词，用逗号「,」分隔。关键词应涵盖：
-- **核心对象/场景:** (例如: 猫, 城市, 森林, UI界面)
-- **风格流派:** (例如: 赛博朋克, 水彩, 扁平插画, 摄影, 3D渲染)
-- **构图/视角:** (例如: 特写, 远景, 对称, 俯视)
-- **颜色色调:** (例如: 蓝色, 暖色调, 高对比度, 莫兰迪色)
-- **氛围/情感:** (例如: 宁静, 活力, 神秘, 复古)
-- **用途/概念:** (例如: 网站背景, 角色参考, LOGO灵感, 海报设计)]
-
----
-
-**这是一个优秀的范例：**
-
-**图片内容:** 一张赛博朋克风格的城市夜景插画，视角从低处仰望，街道上霓虹灯闪烁，空中有点缀的飞行器。
-**AI应输出:**
-**描述：**
-一张充满未来感的赛博朋克城市夜景插画。画面采用低角度仰视构图，突显了摩天大楼的宏伟。深蓝色与紫色的主色调中，穿插着明亮的粉色和青色霓虹灯，营造出一种神秘、繁华又略带迷幻的氛围。光影对比强烈，细节丰富，展现了一个科技高度发达的未来世界。
-**标签：**
-赛博朋克, 城市夜景, 插画, 未来科技, 霓虹灯, 街道, 摩天大楼, 飞行器, 紫色, 蓝色, 低角度, 科幻, 概念艺术, 游戏背景, 赛博美学`;
-        }
+function buildAPIRequest(provider, imageBase64, model) {
+    // 使用当前激活的注释模板
+    const activeTemplate = getActiveTemplate('annotation');
+    if (!activeTemplate || !activeTemplate.prompt) {
+        throw new Error('请激活注释模板');
     }
+    
+    const prompt = activeTemplate.prompt;
     
     // 根据图片格式确定MIME类型
     let mimeType = 'image/jpeg';
@@ -2399,7 +2316,6 @@ function saveConfiguration() {
             skipExistingAnnotations: pluginState.settings.skipExistingAnnotations,
             skipProcessedImages: pluginState.settings.skipProcessedImages,
             customModels: pluginConfig.customModels || {},
-            customPrompt: pluginConfig.customPrompt,
             templates: pluginConfig.templates || [],
             activeTemplateIds: pluginConfig.activeTemplateIds || {},
             lastSaved: new Date().toISOString()
@@ -2879,21 +2795,21 @@ const DEFAULT_TEMPLATES = [
         type: 'annotation',
         name: '默认注释模板',
         isDefault: true,
-        prompt: '分析这张图片，提供一个简洁的视觉描述，适合作为替代文本。重点关注主要主体、颜色和氛围。请使用中文回答。'
+        prompt: '你是一位专业的数字资产管理员，你的任务是为 Eagle 素材库中的图片生成一段生动的描述和一组精确的关键词（标签），以实现高效的搜索和分类。\n\n请严格按照以下格式为我提供的图片生成内容：\n\n**描述：**\n[在这里用 2-3 句话生动地描述图片。内容应包括：画面的核心主体、整体风格、构图方式、色调与光影，以及传递出的氛围或情感。]\n\n**标签：**\n[在这里列出 10-15 个相关的关键词，用逗号「,」分隔。关键词应涵盖：\n- **核心对象/场景:** (例如: 猫, 城市, 森林, UI界面)\n- **风格流派:** (例如: 赛博朋克, 水彩, 扁平插画, 摄影, 3D渲染)\n- **构图/视角:** (例如: 特写, 远景, 对称, 俯视)\n- **颜色色调:** (例如: 蓝色, 暖色调, 高对比度, 莫兰迪色)\n- **氛围/情感:** (例如: 宁静, 活力, 神秘, 复古)\n- **用途/概念:** (例如: 网站背景, 角色参考, LOGO灵感, 海报设计)]\n\n---\n\n**这是一个优秀的范例：**\n\n**图片内容:** 一张赛博朋克风格的城市夜景插画，视角从低处仰望，街道上霓虹灯闪烁，空中有点缀的飞行器。\n**AI应输出:**\n**描述：**\n一张充满未来感的赛博朋克城市夜景插画。画面采用低角度仰视构图，突显了摩天大楼的宏伟。深蓝色与紫色的主色调中，穿插着明亮的粉色和青色霓虹灯，营造出一种神秘、繁华又略带迷幻的氛围。光影对比强烈，细节丰富，展现了一个科技高度发达的未来世界。\n**标签：**\n赛博朋克, 城市夜景, 插画, 未来科技, 霓虹灯, 街道, 摩天大楼, 飞行器, 紫色, 蓝色, 低角度, 科幻, 概念艺术, 游戏背景, 赛博美学'
     },
     {
         id: 'default-tag',
         type: 'tag',
         name: '默认标签模板',
         isDefault: true,
-        prompt: '为这张图片生成 5-10 个相关标签。以逗号分隔的列表形式返回。请使用中文标签。'
+        prompt: '你是一位专业的数字资产管理员，你的任务是为图片匹配最合适的标签。\n\n请根据图片内容，从以下可用标签中选择最匹配的标签：\n\n可用标签：{availableTags}\n\n请严格按照以下要求：\n1. 只选择与图片内容高度相关的标签\n2. 每个标签用逗号分隔\n3. 不要添加可用标签列表中没有的标签\n4. 选择数量控制在3-8个标签之间\n5. 优先选择描述性强的标签\n\n请直接输出匹配的标签，用逗号分隔，不要添加其他说明文字。'
     },
     {
         id: 'default-rename',
         type: 'rename',
         name: '默认重命名模板',
         isDefault: true,
-        prompt: '根据图片内容生成一个简短的文件名（不含扩展名）。使用下划线分隔单词，例如：mountain_landscape_sunset。请使用英文或拼音。'
+        prompt: '你是一位专业的数字资产管理员，你的任务是为 Eagle 素材库中的图片进行重命名，以实现高效的搜索和分类。\n\n请严格按照以下格式为我提供的图片生成内容：\n使用中文进行命名\n不含扩展名\n\n---\n\n例子：\n\n一二布布大电影.png'
     }
 ];
 
@@ -3184,7 +3100,7 @@ function loadTemplateToEditor(templateId) {
                     <label class="template-form-label">${getTypeDisplayName(template.type)}提示词</label>
                     <textarea class="template-form-textarea" id="templatePromptInput" onchange="markTemplateAsChanged()">${template.prompt}</textarea>
                 </div>
-                <div class="template-preview">
+                <!--<div class="template-preview">
                     <div class="template-preview-title">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -3195,7 +3111,7 @@ function loadTemplateToEditor(templateId) {
                     <div class="template-preview-content">
                         ${getPreviewContent(template.type)}
                     </div>
-                </div>
+                </div>-->
             </div>
         </div>
     `;
