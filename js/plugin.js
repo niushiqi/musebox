@@ -5,6 +5,279 @@
 
 console.log(`批量重命名备注标签 - MuseAI v1.0.0 已启动`);
 
+// 模板管理函数 - 全局立即可用
+function switchTemplateTab(type) {
+    console.log('switchTemplateTab 被调用:', type);
+    
+    if (!window.templateUIState) {
+        window.templateUIState = {
+            currentType: 'annotation',
+            selectedTemplateId: null,
+            hasUnsavedChanges: false
+        };
+    }
+    
+    window.templateUIState.currentType = type;
+    
+    // 更新标签页状态
+    document.querySelectorAll('.template-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.type === type);
+    });
+    
+    // 延迟执行，确保插件已初始化
+    setTimeout(() => {
+        if (window.renderTemplateList) {
+            window.renderTemplateList();
+        } else if (typeof renderTemplateList === 'function') {
+            renderTemplateList();
+        }
+        
+        if (window.clearTemplateEditor) {
+            window.clearTemplateEditor();
+        } else if (typeof clearTemplateEditor === 'function') {
+            clearTemplateEditor();
+        }
+    }, 100);
+}
+
+// 立即将函数添加到全局作用域
+window.switchTemplateTab = switchTemplateTab;
+
+function createNewTemplate() {
+    console.log('createNewTemplate 被调用');
+    setTimeout(() => {
+        if (window.eagleAutoAnnotation && window.eagleAutoAnnotation.createTemplate) {
+            const type = window.templateUIState?.currentType || 'annotation';
+            const template = window.eagleAutoAnnotation.createTemplate(type);
+            
+            if (window.renderTemplateList) {
+                window.renderTemplateList();
+            } else if (typeof renderTemplateList === 'function') {
+                renderTemplateList();
+            }
+            
+            if (window.selectTemplate) {
+                window.selectTemplate(template.id);
+            } else if (typeof selectTemplate === 'function') {
+                selectTemplate(template.id);
+            }
+        }
+    }, 50);
+}
+
+// 立即将函数添加到全局作用域
+window.createNewTemplate = createNewTemplate;
+
+function saveCurrentTemplate() {
+    console.log('saveCurrentTemplate 被调用');
+    if (window.eagleAutoAnnotation && window.eagleAutoAnnotation.saveCurrentTemplate) {
+        window.eagleAutoAnnotation.saveCurrentTemplate();
+    } else if (typeof saveCurrentTemplate === 'function') {
+        // 调用本地定义的函数
+        const templateId = window.templateUIState?.selectedTemplateId;
+        if (templateId) {
+            const nameInput = document.getElementById('templateNameInput');
+            const promptInput = document.getElementById('templatePromptInput');
+            
+            if (nameInput && promptInput) {
+                const name = nameInput.value.trim();
+                const prompt = promptInput.value.trim();
+                
+                if (name && prompt && window.eagleAutoAnnotation) {
+                    try {
+                        window.eagleAutoAnnotation.updateTemplate(templateId, { name, prompt });
+                        if (window.templateUIState) {
+                            window.templateUIState.hasUnsavedChanges = false;
+                        }
+                        
+                        const saveBtn = document.getElementById('saveTemplateBtn');
+                        if (saveBtn) {
+                            saveBtn.disabled = true;
+                            saveBtn.style.color = '';
+                        }
+                        
+                        if (window.renderTemplateList) {
+                            window.renderTemplateList();
+                        }
+                        
+                        if (window.showNotification) {
+                            window.showNotification('模板已保存', 'success');
+                        }
+                    } catch (error) {
+                        if (window.showNotification) {
+                            window.showNotification('保存失败: ' + error.message, 'error');
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// 立即将函数添加到全局作用域
+window.saveCurrentTemplate = saveCurrentTemplate;
+
+function toggleTemplateDefault(templateId) {
+    console.log('toggleTemplateDefault 被调用:', templateId);
+    if (window.eagleAutoAnnotation && window.eagleAutoAnnotation.toggleTemplateDefault) {
+        window.eagleAutoAnnotation.toggleTemplateDefault(templateId);
+    } else if (typeof toggleTemplateDefault === 'function') {
+        // 调用本地定义的函数
+        if (window.eagleAutoAnnotation) {
+            const template = window.eagleAutoAnnotation.pluginConfig.templates.find(t => t.id === templateId);
+            if (template) {
+                const currentActiveId = window.eagleAutoAnnotation.pluginConfig.activeTemplateIds[template.type];
+                
+                if (currentActiveId === templateId) {
+                    // 取消默认
+                    window.eagleAutoAnnotation.pluginConfig.activeTemplateIds[template.type] = '';
+                    if (window.showNotification) {
+                        window.showNotification('已取消默认模板', 'success');
+                    }
+                } else {
+                    // 设为默认
+                    window.eagleAutoAnnotation.setActiveTemplate(template.type, templateId);
+                    if (window.showNotification) {
+                        window.showNotification('已设为默认模板', 'success');
+                    }
+                }
+                
+                // 刷新列表和编辑器
+                if (window.renderTemplateList) {
+                    window.renderTemplateList();
+                }
+                if (window.loadTemplateToEditor) {
+                    window.loadTemplateToEditor(templateId);
+                }
+            }
+        }
+    }
+}
+
+// 立即将函数添加到全局作用域
+window.toggleTemplateDefault = toggleTemplateDefault;
+
+function deleteTemplateConfirm(templateId) {
+    console.log('deleteTemplateConfirm 被调用:', templateId);
+    if (window.eagleAutoAnnotation && window.eagleAutoAnnotation.deleteTemplateConfirm) {
+        window.eagleAutoAnnotation.deleteTemplateConfirm(templateId);
+    } else if (typeof deleteTemplateConfirm === 'function') {
+        // 调用本地定义的函数
+        if (window.eagleAutoAnnotation) {
+            const template = window.eagleAutoAnnotation.pluginConfig.templates.find(t => t.id === templateId);
+            if (template && confirm(`确定要删除模板"${template.name}"吗？`)) {
+                try {
+                    window.eagleAutoAnnotation.deleteTemplate(templateId);
+                    if (window.renderTemplateList) {
+                        window.renderTemplateList();
+                    }
+                    if (window.clearTemplateEditor) {
+                        window.clearTemplateEditor();
+                    }
+                    if (window.showNotification) {
+                        window.showNotification('模板已删除', 'success');
+                    }
+                } catch (error) {
+                    if (window.showNotification) {
+                        window.showNotification('删除失败: ' + error.message, 'error');
+                    }
+                }
+            }
+        }
+    }
+}
+
+// 立即将函数添加到全局作用域
+window.deleteTemplateConfirm = deleteTemplateConfirm;
+
+function markTemplateAsChanged() {
+    console.log('markTemplateAsChanged 被调用');
+    if (window.templateUIState) {
+        window.templateUIState.hasUnsavedChanges = true;
+    }
+    
+    const saveBtn = document.getElementById('saveTemplateBtn');
+    if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.style.color = '#3b82f6';
+    }
+}
+
+// 立即将函数添加到全局作用域
+window.markTemplateAsChanged = markTemplateAsChanged;
+
+function updateSelectedTemplate(type) {
+    console.log('updateSelectedTemplate 被调用:', type);
+    
+    if (!window.eagleAutoAnnotation) {
+        console.warn('eagleAutoAnnotation 未初始化');
+        return;
+    }
+    
+    const selector = document.getElementById(`${type}-template`);
+    if (!selector) {
+        console.warn(`找不到 ${type} 模板选择器`);
+        return;
+    }
+    
+    const selectedId = selector.value;
+    if (selectedId) {
+        try {
+            window.eagleAutoAnnotation.setActiveTemplate(type, selectedId);
+            console.log(`已设置 ${type} 的激活模板:`, selectedId);
+        } catch (error) {
+            console.error(`设置激活模板失败:`, error);
+        }
+    }
+}
+
+// 立即将函数添加到全局作用域
+window.updateSelectedTemplate = updateSelectedTemplate;
+
+// 更新工作台的模板选择器
+function updateTemplateSelectors() {
+    console.log('更新模板选择器');
+    
+    if (!window.eagleAutoAnnotation || !window.eagleAutoAnnotation.pluginConfig) {
+        console.warn('eagleAutoAnnotation 未初始化，跳过模板选择器更新');
+        return;
+    }
+    
+    const types = ['annotation', 'tag', 'rename'];
+    
+    types.forEach(type => {
+        const selector = document.getElementById(`${type}-template`);
+        if (!selector) return;
+        
+        // 清空现有选项
+        selector.innerHTML = '';
+        
+        // 获取该类型的所有模板
+        const templates = window.eagleAutoAnnotation.getTemplatesByType(type);
+        const activeId = window.eagleAutoAnnotation.pluginConfig.activeTemplateIds[type];
+        
+        if (templates.length === 0) {
+            // 如果没有模板，显示提示
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = `暂无${getTypeDisplayName(type)}模板`;
+            option.disabled = true;
+            selector.appendChild(option);
+        } else {
+            // 添加模板选项
+            templates.forEach(template => {
+                const option = document.createElement('option');
+                option.value = template.id;
+                option.textContent = template.name;
+                if (template.id === activeId) {
+                    option.selected = true;
+                }
+                selector.appendChild(option);
+            });
+        }
+    });
+}
+
 // 插件配置
 const pluginConfig = {
     // AI服务商配置
@@ -59,6 +332,14 @@ const pluginConfig = {
 一张充满未来感的赛博朋克城市夜景插画。画面采用低角度仰视构图，突显了摩天大楼的宏伟。深蓝色与紫色的主色调中，穿插着明亮的粉色和青色霓虹灯，营造出一种神秘、繁华又略带迷幻的氛围。光影对比强烈，细节丰富，展现了一个科技高度发达的未来世界。
 **标签：**
 赛博朋克, 城市夜景, 插画, 未来科技, 霓虹灯, 街道, 摩天大楼, 飞行器, 紫色, 蓝色, 低角度, 科幻, 概念艺术, 游戏背景, 赛博美学`, // 自定义提示词
+    
+    // 模板管理
+    templates: [], // 模板列表
+    activeTemplateIds: { // 当前激活的模板ID
+        annotation: '',
+        tag: '',
+        rename: ''
+    }
 };
 
 // AI服务商配置
@@ -277,6 +558,14 @@ function resetToDefaultConfig() {
     };
     pluginConfig.customModels = {};
     
+    // 重置模板数据
+    pluginConfig.templates = [];
+    pluginConfig.activeTemplateIds = {
+        annotation: '',
+        tag: '',
+        rename: ''
+    };
+    
     // 重置插件状态
     pluginState.settings.autoAnnotation = false;
     pluginState.settings.manualAnnotation = true;
@@ -412,6 +701,14 @@ function checkAPIConfiguration() {
 一张充满未来感的赛博朋克城市夜景插画。画面采用低角度仰视构图，突显了摩天大楼的宏伟。深蓝色与紫色的主色调中，穿插着明亮的粉色和青色霓虹灯，营造出一种神秘、繁华又略带迷幻的氛围。光影对比强烈，细节丰富，展现了一个科技高度发达的未来世界。
 **标签：**
 赛博朋克, 城市夜景, 插画, 未来科技, 霓虹灯, 街道, 摩天大楼, 飞行器, 紫色, 蓝色, 低角度, 科幻, 概念艺术, 游戏背景, 赛博美学`;
+            
+            // 加载模板数据
+            if (config.templates && Array.isArray(config.templates)) {
+                pluginConfig.templates = config.templates;
+            }
+            if (config.activeTemplateIds && typeof config.activeTemplateIds === 'object') {
+                pluginConfig.activeTemplateIds = config.activeTemplateIds;
+            }
             
             // 检查当前服务商是否已配置
             const currentProvider = pluginConfig.provider;
@@ -1226,8 +1523,16 @@ async function generateImageAnnotation(imageData) {
 
 // 构建API请求数据
 function buildAPIRequest(provider, imageBase64, model, customPrompt = null) {
-    // 使用自定义提示词，如果没有设置则使用默认提示词
-    const prompt = customPrompt || pluginConfig.customPrompt || `你是一位专业的数字资产管理员，你的任务是为 Eagle 素材库中的图片生成一段生动的描述和一组精确的关键词（标签），以实现高效的搜索和分类。
+    // 使用自定义提示词，如果没有设置则使用当前激活的注释模板
+    let prompt = customPrompt;
+    
+    if (!prompt) {
+        const activeTemplate = getActiveTemplate('annotation');
+        if (activeTemplate && activeTemplate.prompt) {
+            prompt = activeTemplate.prompt;
+        } else {
+            // 如果没有激活模板，使用默认提示词
+            prompt = pluginConfig.customPrompt || `你是一位专业的数字资产管理员，你的任务是为 Eagle 素材库中的图片生成一段生动的描述和一组精确的关键词（标签），以实现高效的搜索和分类。
 
 请严格按照以下格式为我提供的图片生成内容：
 
@@ -1253,6 +1558,8 @@ function buildAPIRequest(provider, imageBase64, model, customPrompt = null) {
 一张充满未来感的赛博朋克城市夜景插画。画面采用低角度仰视构图，突显了摩天大楼的宏伟。深蓝色与紫色的主色调中，穿插着明亮的粉色和青色霓虹灯，营造出一种神秘、繁华又略带迷幻的氛围。光影对比强烈，细节丰富，展现了一个科技高度发达的未来世界。
 **标签：**
 赛博朋克, 城市夜景, 插画, 未来科技, 霓虹灯, 街道, 摩天大楼, 飞行器, 紫色, 蓝色, 低角度, 科幻, 概念艺术, 游戏背景, 赛博美学`;
+        }
+    }
     
     // 根据图片格式确定MIME类型
     let mimeType = 'image/jpeg';
@@ -2086,6 +2393,8 @@ function saveConfiguration() {
             skipProcessedImages: pluginState.settings.skipProcessedImages,
             customModels: pluginConfig.customModels || {},
             customPrompt: pluginConfig.customPrompt,
+            templates: pluginConfig.templates || [],
+            activeTemplateIds: pluginConfig.activeTemplateIds || {},
             lastSaved: new Date().toISOString()
         };
         
@@ -2345,7 +2654,16 @@ window.eagleAutoAnnotation = {
     addAnnotationToImage,   // 导出添加注释函数
     pluginConfig,
     pluginState,
-    aiProviders
+    aiProviders,
+    // 模板管理函数
+    createTemplate,
+    updateTemplate,
+    deleteTemplate,
+    getTemplatesByType,
+    setActiveTemplate,
+    getActiveTemplate,
+    initializeDefaultTemplates,
+    updateTemplateSelectors
 };
 
 // v1.9.0 实时监控选中图片变化
@@ -2409,6 +2727,23 @@ setTimeout(() => {
     window.testBackgroundMode = testBackgroundMode;
     window.resetToDefaultConfig = resetToDefaultConfig; // v1.9.0 新增
     
+    // 模板管理函数 - 确保在全局作用域中可用
+    window.switchTemplateTab = switchTemplateTab;
+    window.createNewTemplate = createNewTemplate;
+    window.saveCurrentTemplate = saveCurrentTemplate;
+    window.toggleTemplateDefault = toggleTemplateDefault;
+    window.deleteTemplateConfirm = deleteTemplateConfirm;
+    window.markTemplateAsChanged = markTemplateAsChanged;
+    window.updateSelectedTemplate = updateSelectedTemplate;
+    window.updateTemplateSelectors = updateTemplateSelectors;
+    
+    // 模板管理UI函数
+    window.renderTemplateList = renderTemplateList;
+    window.selectTemplate = selectTemplate;
+    window.loadTemplateToEditor = loadTemplateToEditor;
+    window.clearTemplateEditor = clearTemplateEditor;
+    window.initializeTemplateUI = initializeTemplateUI;
+    
     // 启动实时监控
     startRealTimeSelectedImagesMonitoring();
     
@@ -2443,8 +2778,9 @@ setTimeout(() => {
         }, 3000);
     };
     
-    console.log('✅ 全局函数导出完成 - v0.2.1');
+    console.log('✅ 全局函数导出完成 - v0.3.0');
     console.log('🧪 可以在控制台输入 testProgressBar() 来测试进度条效果');
+    console.log('📝 模板管理功能已就绪');
 }, 50);
 
 // 进度条控制函数实现 - 使用按钮背景渐变
@@ -2507,31 +2843,556 @@ function hideManualProgress() {
     const buttonText = document.getElementById('manual-btn-text');
     const manualBtn = document.getElementById('manual-btn');
     
+    console.log('🏁 hideManualProgress 被调用:', { buttonText: !!buttonText, manualBtn: !!manualBtn });
+    
     if (buttonText && manualBtn) {
-        // 重置进度条
-        manualBtn.style.backgroundImage = 'none';
+        // 恢复按钮状态
+        manualBtn.disabled = false;
+        manualBtn.style.backgroundColor = ''; // 清除背景色
+        manualBtn.style.backgroundImage = ''; // 清除进度条
+        manualBtn.style.backgroundSize = '';
+        manualBtn.style.backgroundRepeat = '';
+        manualBtn.style.opacity = '';
         
         // 恢复按钮文本
         buttonText.textContent = '为选中图片生成注释';
         
-        // 恢复按钮状态（根据是否有选中图片来决定是否启用）
-        // 使用全局 window.globalSelectionManager，如果不存在则使用 pluginState
-        let selectedImages = [];
-        if (window.globalSelectionManager && typeof window.globalSelectionManager.getSelectedImages === 'function') {
-            selectedImages = window.globalSelectionManager.getSelectedImages();
-        } else if (pluginState && Array.isArray(pluginState.selectedImages)) {
-            selectedImages = pluginState.selectedImages;
+        console.log('✅ 按钮状态已恢复');
+    } else {
+        console.error('❌ hideManualProgress 找不到必要的DOM元素:', { buttonText: !!buttonText, manualBtn: !!manualBtn });
+    }
+}
+
+// ==================== 模板管理功能 ====================
+
+// 默认模板
+const DEFAULT_TEMPLATES = [
+    {
+        id: 'default-annotation',
+        type: 'annotation',
+        name: '默认注释模板',
+        isDefault: true,
+        prompt: '分析这张图片，提供一个简洁的视觉描述，适合作为替代文本。重点关注主要主体、颜色和氛围。请使用中文回答。'
+    },
+    {
+        id: 'default-tag',
+        type: 'tag',
+        name: '默认标签模板',
+        isDefault: true,
+        prompt: '为这张图片生成 5-10 个相关标签。以逗号分隔的列表形式返回。请使用中文标签。'
+    },
+    {
+        id: 'default-rename',
+        type: 'rename',
+        name: '默认重命名模板',
+        isDefault: true,
+        prompt: '根据图片内容生成一个简短的文件名（不含扩展名）。使用下划线分隔单词，例如：mountain_landscape_sunset。请使用英文或拼音。'
+    }
+];
+
+// 初始化默认模板
+function initializeDefaultTemplates() {
+    if (!pluginConfig.templates || pluginConfig.templates.length === 0) {
+        pluginConfig.templates = [...DEFAULT_TEMPLATES];
+        pluginConfig.activeTemplateIds = {
+            annotation: 'default-annotation',
+            tag: 'default-tag',
+            rename: 'default-rename'
+        };
+        console.log('已初始化默认模板');
+        saveConfiguration();
+    }
+}
+
+// 创建新模板
+function createTemplate(type, name, prompt) {
+    const template = {
+        id: generateTemplateId(),
+        type: type,
+        name: name || `新建${getTypeDisplayName(type)}模板`,
+        isDefault: false,
+        prompt: prompt || getDefaultPromptForType(type)
+    };
+    
+    pluginConfig.templates.push(template);
+    saveConfiguration();
+    
+    console.log('已创建新模板:', template);
+    return template;
+}
+
+// 更新模板
+function updateTemplate(id, updates) {
+    const templateIndex = pluginConfig.templates.findIndex(t => t.id === id);
+    if (templateIndex === -1) {
+        throw new Error('模板不存在');
+    }
+    
+    const template = pluginConfig.templates[templateIndex];
+    Object.assign(template, updates);
+    
+    saveConfiguration();
+    console.log('已更新模板:', template);
+    return template;
+}
+
+// 删除模板
+function deleteTemplate(id) {
+    const templateIndex = pluginConfig.templates.findIndex(t => t.id === id);
+    if (templateIndex === -1) {
+        throw new Error('模板不存在');
+    }
+    
+    const template = pluginConfig.templates[templateIndex];
+    if (template.isDefault) {
+        throw new Error('不能删除默认模板');
+    }
+    
+    // 如果删除的是当前激活的模板，重置为默认模板
+    if (pluginConfig.activeTemplateIds[template.type] === id) {
+        const defaultTemplate = pluginConfig.templates.find(t => t.type === template.type && t.isDefault);
+        if (defaultTemplate) {
+            pluginConfig.activeTemplateIds[template.type] = defaultTemplate.id;
+        } else {
+            pluginConfig.activeTemplateIds[template.type] = '';
+        }
+    }
+    
+    pluginConfig.templates.splice(templateIndex, 1);
+    saveConfiguration();
+    
+    console.log('已删除模板:', template);
+    return true;
+}
+
+// 获取指定类型的模板
+function getTemplatesByType(type) {
+    return pluginConfig.templates.filter(t => t.type === type);
+}
+
+// 设置激活模板
+function setActiveTemplate(type, id) {
+    const template = pluginConfig.templates.find(t => t.id === id && t.type === type);
+    if (!template) {
+        throw new Error('模板不存在');
+    }
+    
+    pluginConfig.activeTemplateIds[type] = id;
+    saveConfiguration();
+    
+    console.log(`已设置${getTypeDisplayName(type)}模板为激活:`, template);
+    return template;
+}
+
+// 获取激活模板
+function getActiveTemplate(type) {
+    const activeId = pluginConfig.activeTemplateIds[type];
+    if (!activeId) return null;
+    
+    return pluginConfig.templates.find(t => t.id === activeId && t.type === type) || null;
+}
+
+// 生成模板ID
+function generateTemplateId() {
+    return 'template_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+}
+
+// 获取类型显示名称
+function getTypeDisplayName(type) {
+    const names = {
+        annotation: '注释',
+        tag: '标签',
+        rename: '重命名'
+    };
+    return names[type] || type;
+}
+
+// 获取类型的默认提示词
+function getDefaultPromptForType(type) {
+    const prompts = {
+        annotation: '描述这张图片...',
+        tag: '为这张图片生成标签...',
+        rename: '生成文件名...'
+    };
+    return prompts[type] || '';
+}
+
+// 模板管理UI状态
+let templateUIState = {
+    currentType: 'annotation',
+    selectedTemplateId: null,
+    hasUnsavedChanges: false
+};
+
+// 切换模板类型标签页
+function switchTemplateTab(type) {
+    if (!window.templateUIState) {
+        window.templateUIState = {
+            currentType: 'annotation',
+            selectedTemplateId: null,
+            hasUnsavedChanges: false
+        };
+    }
+    
+    window.templateUIState.currentType = type;
+    
+    // 更新标签页状态
+    document.querySelectorAll('.template-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.type === type);
+    });
+    
+    // 刷新模板列表
+    renderTemplateList();
+    
+    // 清空编辑器
+    clearTemplateEditor();
+}
+
+// 渲染模板列表
+function renderTemplateList() {
+    const templateList = document.getElementById('templateList');
+    if (!templateList) return;
+    
+    const templates = window.eagleAutoAnnotation ? window.eagleAutoAnnotation.getTemplatesByType(window.templateUIState?.currentType || 'annotation') : [];
+    const activeId = window.eagleAutoAnnotation ? window.eagleAutoAnnotation.pluginConfig.activeTemplateIds[window.templateUIState?.currentType || 'annotation'] : '';
+    
+    templateList.innerHTML = '';
+    
+    if (templates.length === 0) {
+        templateList.innerHTML = `
+            <div style="text-align: center; padding: 40px 20px; color: #94a3b8;">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 12px; opacity: 0.5;">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                <p>暂无${getTypeDisplayName(window.templateUIState?.currentType || 'annotation')}模板</p>
+            </div>
+        `;
+        return;
+    }
+    
+    templates.forEach(template => {
+        const item = document.createElement('div');
+        item.className = 'template-item';
+        item.dataset.templateId = template.id;
+        
+        if (template.id === window.templateUIState?.selectedTemplateId) {
+            item.classList.add('active');
         }
         
-        if (selectedImages.length > 0) {
-            manualBtn.disabled = false;
-            manualBtn.style.backgroundColor = '#3a8ffd'; // 恢复蓝色背景
-            manualBtn.style.opacity = '1';
-        } else {
-            manualBtn.disabled = true;
-            manualBtn.style.backgroundColor = '#3a8ffd'; // 恢复蓝色背景
-            manualBtn.style.opacity = '0.5';
+        item.innerHTML = `
+            <div class="template-item-header">
+                <div class="template-item-name">${template.name}</div>
+                <div class="template-item-actions">
+                    ${template.id === activeId ? '<div class="template-default-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>默认</div>' : ''}
+                    ${!template.isDefault ? `<button class="template-item-btn delete" onclick="deleteTemplateConfirm('${template.id}')" title="删除"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="m19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>` : ''}
+                </div>
+            </div>
+        `;
+        
+        item.addEventListener('click', () => selectTemplate(template.id));
+        templateList.appendChild(item);
+    });
+}
+
+// 选择模板
+function selectTemplate(templateId) {
+    // 检查是否有未保存的更改
+    if (window.templateUIState?.hasUnsavedChanges) {
+        if (!confirm('您有未保存的更改，确定要切换模板吗？')) {
+            return;
+        }
+    }
+    
+    if (!window.templateUIState) {
+        window.templateUIState = {
+            currentType: 'annotation',
+            selectedTemplateId: null,
+            hasUnsavedChanges: false
+        };
+    }
+    
+    window.templateUIState.selectedTemplateId = templateId;
+    window.templateUIState.hasUnsavedChanges = false;
+    
+    // 更新列表选中状态
+    document.querySelectorAll('.template-item').forEach(item => {
+        item.classList.toggle('active', item.dataset.templateId === templateId);
+    });
+    
+    // 加载模板到编辑器
+    loadTemplateToEditor(templateId);
+}
+
+// 加载模板到编辑器
+function loadTemplateToEditor(templateId) {
+    if (!window.eagleAutoAnnotation || !window.eagleAutoAnnotation.pluginConfig) {
+        console.warn('eagleAutoAnnotation 未初始化');
+        return;
+    }
+    
+    const template = window.eagleAutoAnnotation.pluginConfig.templates.find(t => t.id === templateId);
+    if (!template) return;
+    
+    const editor = document.getElementById('templateEditor');
+    if (!editor) return;
+    
+    const activeId = window.eagleAutoAnnotation.pluginConfig.activeTemplateIds[template.type];
+    const isActive = template.id === activeId;
+    
+    editor.innerHTML = `
+        <div class="template-editor-content">
+            <div class="template-editor-header">
+                <div class="template-editor-title">编辑模板</div>
+                <div class="template-editor-actions">
+                    <button class="btn-icon" onclick="toggleTemplateDefault('${template.id}')" title="${isActive ? '取消默认' : '设为默认'}">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="${isActive ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                        </svg>
+                    </button>
+                    <button class="btn-icon" onclick="saveCurrentTemplate()" title="保存" id="saveTemplateBtn" disabled>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                            <polyline points="17 21v-8H7v8"></polyline>
+                            <polyline points="7 3v5h8"></polyline>
+                        </svg>
+                    </button>
+                    ${!template.isDefault ? `<button class="btn-icon" onclick="deleteTemplateConfirm('${template.id}')" title="删除" style="color: #ef4444;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="m19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2h4a2 2 0 0 1 2 2v2"></path></svg></button>` : ''}
+                </div>
+            </div>
+            <div class="template-editor-body">
+                <div class="template-form-group">
+                    <label class="template-form-label">模板名称</label>
+                    <input type="text" class="template-form-input" id="templateNameInput" value="${template.name}" onchange="markTemplateAsChanged()">
+                </div>
+                <div class="template-form-group">
+                    <label class="template-form-label">${getTypeDisplayName(template.type)}提示词</label>
+                    <textarea class="template-form-textarea" id="templatePromptInput" onchange="markTemplateAsChanged()">${template.prompt}</textarea>
+                </div>
+                <div class="template-preview">
+                    <div class="template-preview-title">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                        效果预览
+                    </div>
+                    <div class="template-preview-content">
+                        ${getPreviewContent(template.type)}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// 获取预览内容
+function getPreviewContent(type) {
+    switch (type) {
+        case 'annotation':
+            return '<div style="font-style: italic; color: #64748b;">一张充满未来感的赛博朋克城市夜景插画。画面采用低角度仰视构图，突显了摩天大楼的宏伟...</div>';
+        case 'tag':
+            return '<div class="template-preview-tags"><span class="template-preview-tag">风景</span><span class="template-preview-tag">山脉</span><span class="template-preview-tag">雪景</span><span class="template-preview-tag">日落</span><span class="template-preview-tag">森林</span></div>';
+        case 'rename':
+            return '<div class="template-preview-filename"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>mountain_landscape_sunset.jpg</div>';
+        default:
+            return '';
+    }
+}
+
+// 清空编辑器
+function clearTemplateEditor() {
+    const editor = document.getElementById('templateEditor');
+    if (!editor) return;
+    
+    editor.innerHTML = `
+        <div class="template-editor-placeholder">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+            <p>请选择一个模板进行编辑</p>
+        </div>
+    `;
+    
+    if (!window.templateUIState) {
+        window.templateUIState = {
+            currentType: 'annotation',
+            selectedTemplateId: null,
+            hasUnsavedChanges: false
+        };
+    }
+    
+    window.templateUIState.selectedTemplateId = null;
+    window.templateUIState.hasUnsavedChanges = false;
+}
+
+// 创建新模板
+function createNewTemplate() {
+    const type = window.templateUIState?.currentType || 'annotation';
+    
+    if (!window.eagleAutoAnnotation) {
+        console.warn('eagleAutoAnnotation 未初始化');
+        return;
+    }
+    
+    const template = window.eagleAutoAnnotation.createTemplate(type);
+    
+    // 刷新列表并选中新模板
+    renderTemplateList();
+    selectTemplate(template.id);
+    
+    // 聚焦到名称输入框
+    setTimeout(() => {
+        const nameInput = document.getElementById('templateNameInput');
+        if (nameInput) {
+            nameInput.select();
+        }
+    }, 100);
+}
+
+// 标记模板已更改
+function markTemplateAsChanged() {
+    templateUIState.hasUnsavedChanges = true;
+    
+    const saveBtn = document.getElementById('saveTemplateBtn');
+    if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.style.color = '#3b82f6';
+    }
+}
+
+// 保存当前模板
+function saveCurrentTemplate() {
+    if (!window.templateUIState?.selectedTemplateId) return;
+    
+    const nameInput = document.getElementById('templateNameInput');
+    const promptInput = document.getElementById('templatePromptInput');
+    
+    if (!nameInput || !promptInput) return;
+    
+    const name = nameInput.value.trim();
+    const prompt = promptInput.value.trim();
+    
+    if (!name) {
+        if (window.showNotification) {
+            window.showNotification('模板名称不能为空', 'warning');
+        }
+        return;
+    }
+    
+    if (!prompt) {
+        if (window.showNotification) {
+            window.showNotification('提示词不能为空', 'warning');
+        }
+        return;
+    }
+    
+    try {
+        if (window.eagleAutoAnnotation) {
+            window.eagleAutoAnnotation.updateTemplate(window.templateUIState.selectedTemplateId, { name, prompt });
+            window.templateUIState.hasUnsavedChanges = false;
+            
+            const saveBtn = document.getElementById('saveTemplateBtn');
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.style.color = '';
+            }
+            
+            // 刷新列表
+            renderTemplateList();
+            
+            if (window.showNotification) {
+                window.showNotification('模板已保存', 'success');
+            }
+        }
+    } catch (error) {
+        if (window.showNotification) {
+            window.showNotification('保存失败: ' + error.message, 'error');
         }
     }
 }
 
+// 切换模板默认状态
+function toggleTemplateDefault(templateId) {
+    if (!window.eagleAutoAnnotation) {
+        console.warn('eagleAutoAnnotation 未初始化');
+        return;
+    }
+    
+    const template = window.eagleAutoAnnotation.pluginConfig.templates.find(t => t.id === templateId);
+    if (!template) return;
+    
+    const currentActiveId = window.eagleAutoAnnotation.pluginConfig.activeTemplateIds[template.type];
+    
+    if (currentActiveId === templateId) {
+        // 取消默认
+        window.eagleAutoAnnotation.pluginConfig.activeTemplateIds[template.type] = '';
+        if (window.showNotification) {
+            window.showNotification('已取消默认模板', 'success');
+        }
+    } else {
+        // 设为默认
+        window.eagleAutoAnnotation.setActiveTemplate(template.type, templateId);
+        if (window.showNotification) {
+            window.showNotification('已设为默认模板', 'success');
+        }
+    }
+    
+    // 刷新列表和编辑器
+    renderTemplateList();
+    loadTemplateToEditor(templateId);
+}
+
+// 删除模板确认
+function deleteTemplateConfirm(templateId) {
+    if (!window.eagleAutoAnnotation) {
+        console.warn('eagleAutoAnnotation 未初始化');
+        return;
+    }
+    
+    const template = window.eagleAutoAnnotation.pluginConfig.templates.find(t => t.id === templateId);
+    if (!template) return;
+    
+    if (confirm(`确定要删除模板"${template.name}"吗？`)) {
+        try {
+            window.eagleAutoAnnotation.deleteTemplate(templateId);
+            renderTemplateList();
+            clearTemplateEditor();
+            if (window.showNotification) {
+                window.showNotification('模板已删除', 'success');
+            }
+        } catch (error) {
+            if (window.showNotification) {
+                window.showNotification('删除失败: ' + error.message, 'error');
+            }
+        }
+    }
+}
+
+// 初始化模板管理UI
+function initializeTemplateUI() {
+    if (window.eagleAutoAnnotation) {
+        window.eagleAutoAnnotation.initializeDefaultTemplates();
+    }
+    
+    // 设置默认选中的标签页
+    switchTemplateTab('annotation');
+    
+    // 更新工作台的模板选择器
+    if (window.eagleAutoAnnotation && window.eagleAutoAnnotation.updateTemplateSelectors) {
+        window.eagleAutoAnnotation.updateTemplateSelectors();
+    }
+}
+
+
+// 在插件初始化时调用
+eagle.onPluginCreate(() => {
+    console.log('插件已创建');
+    initializePlugin();
+    
+    // 延迟初始化模板UI，确保DOM已加载
+    setTimeout(() => {
+        initializeTemplateUI();
+    }, 200);
+});

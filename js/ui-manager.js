@@ -39,6 +39,10 @@ function initializeUI() {
     // 加载统计数据
     if (window.eagleAutoAnnotation) {
         window.eagleAutoAnnotation.updateTokenUsageUI();
+        // 更新模板选择器
+        if (typeof window.updateTemplateSelectors === 'function') {
+            window.updateTemplateSelectors();
+        }
     }
     
     // 刷新图片列表
@@ -106,6 +110,13 @@ function switchTab(tabName) {
     // 如果切换到设置页面,刷新统计数据
     if (tabName === 'settings' && window.eagleAutoAnnotation) {
         window.eagleAutoAnnotation.updateTokenUsageUI();
+    }
+    
+    // 如果切换到模板管理页面,初始化模板UI
+    if (tabName === 'templates' && window.switchTemplateTab) {
+        setTimeout(() => {
+            window.switchTemplateTab('annotation');
+        }, 100);
     }
 }
 
@@ -670,8 +681,89 @@ async function testAPIConnection() {
 
 // 预览模板
 function previewTemplate(type) {
-    // TODO: 实现模板预览功能
-    showNotification('模板预览功能即将推出', 'info');
+    if (!window.eagleAutoAnnotation) {
+        showNotification('插件核心模块未加载', 'error');
+        return;
+    }
+    
+    const { getActiveTemplate } = window.eagleAutoAnnotation;
+    const template = getActiveTemplate(type);
+    
+    if (!template) {
+        showNotification(`没有激活的${getTypeDisplayName(type)}模板`, 'warning');
+        return;
+    }
+    
+    // 创建预览弹窗
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+    `;
+    
+    const content = document.createElement('div');
+    content.style.cssText = `
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        max-width: 600px;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    `;
+    
+    content.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="margin: 0; font-size: 18px; color: #1e293b;">模板预览 - ${template.name}</h3>
+            <button onclick="this.closest('[style*=fixed]').remove()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b;">&times;</button>
+        </div>
+        <div style="margin-bottom: 16px;">
+            <label style="display: block; font-size: 14px; font-weight: 500; color: #374151; margin-bottom: 8px;">提示词内容</label>
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; font-family: monospace; font-size: 13px; line-height: 1.6; white-space: pre-wrap; max-height: 300px; overflow-y: auto;">${template.prompt}</div>
+        </div>
+        <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px;">
+            <div style="font-size: 12px; font-weight: 600; color: #0369a1; margin-bottom: 8px;">💡 使用提示</div>
+            <div style="font-size: 13px; color: #0c4a6e; line-height: 1.5;">
+                ${getTemplateUsageTip(type)}
+            </div>
+        </div>
+    `;
+    
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+    
+    // 点击背景关闭
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+}
+
+function getTypeDisplayName(type) {
+    const names = {
+        annotation: '注释',
+        tag: '标签',
+        rename: '重命名'
+    };
+    return names[type] || type;
+}
+
+function getTemplateUsageTip(type) {
+    const tips = {
+        annotation: '此模板将用于生成图片的描述性注释，帮助您更好地管理和搜索图片。',
+        tag: '此模板将用于生成图片的标签，可以包含风格、颜色、主题等关键词。',
+        rename: '此模板将用于根据图片内容生成新的文件名，建议使用英文或拼音。'
+    };
+    return tips[type] || '';
 }
 
 // 添加旋转动画

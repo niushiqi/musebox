@@ -98,8 +98,8 @@
                             <div class="control-desc">使用 AI 描述图片内容</div>
                         </div>
                         <div class="control-actions">
-                            <select class="form-select" id="annotation-template">
-                                <option value="default">默认模板</option>
+                            <select class="form-select" id="annotation-template" onchange="updateSelectedTemplate('annotation')">
+                                <!-- 模板选项将动态加载 -->
                             </select>
                             <button class="btn-icon" title="预览模板" onclick="previewTemplate('annotation')">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -127,8 +127,8 @@
                             <div class="control-desc">自动生成相关标签</div>
                         </div>
                         <div class="control-actions">
-                            <select class="form-select" id="tag-template">
-                                <option value="default">默认模板</option>
+                            <select class="form-select" id="tag-template" onchange="updateSelectedTemplate('tag')">
+                                <!-- 模板选项将动态加载 -->
                             </select>
                             <button class="btn-icon" title="预览模板" onclick="previewTemplate('tag')">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -155,8 +155,8 @@
                             <div class="control-desc">根据内容重命名文件</div>
                         </div>
                         <div class="control-actions">
-                            <select class="form-select" id="rename-template">
-                                <option value="default">默认模板</option>
+                            <select class="form-select" id="rename-template" onchange="updateSelectedTemplate('rename')">
+                                <!-- 模板选项将动态加载 -->
                             </select>
                             <button class="btn-icon" title="预览模板" onclick="previewTemplate('rename')">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -240,13 +240,59 @@
                     <h2>模板管理</h2>
                     <p class="page-desc">创建和管理您的 AI 提示词模板</p>
                 </div>
-                <div class="template-placeholder">
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                    </svg>
-                    <p>模板管理功能即将推出</p>
-                    <p class="template-hint">您可以在设置中自定义提示词</p>
+
+                <!-- 模板类型标签页 -->
+                <div class="template-tabs">
+                    <button class="template-tab active" data-type="annotation" onclick="switchTemplateTab('annotation')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                        </svg>
+                        注释模板
+                    </button>
+                    <button class="template-tab" data-type="tag" onclick="switchTemplateTab('tag')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                            <line x1="7" y1="7" x2="7.01" y2="7"></line>
+                        </svg>
+                        标签模板
+                    </button>
+                    <button class="template-tab" data-type="rename" onclick="switchTemplateTab('rename')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                        </svg>
+                        重命名模板
+                    </button>
+                </div>
+
+                <!-- 模板内容区域 -->
+                <div class="template-content">
+                    <!-- 左侧模板列表 -->
+                    <div class="template-sidebar">
+                        <div class="template-list" id="templateList">
+                            <!-- 模板项将动态添加 -->
+                        </div>
+                        <button class="btn btn-secondary template-add-btn" onclick="createNewTemplate()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            新建模板
+                        </button>
+                    </div>
+
+                    <!-- 右侧编辑器 -->
+                    <div class="template-editor" id="templateEditor">
+                        <div class="template-editor-placeholder">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                            <p>请选择一个模板进行编辑</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
