@@ -3046,6 +3046,14 @@ function switchTemplateTab(type) {
     
     // 清空编辑器
     clearTemplateEditor();
+    
+    // 自动选中第一个模板
+    if (window.eagleAutoAnnotation) {
+        const templates = window.eagleAutoAnnotation.getTemplatesByType(type);
+        if (templates.length > 0) {
+            selectTemplate(templates[0].id);
+        }
+    }
 }
 
 // 渲染模板列表
