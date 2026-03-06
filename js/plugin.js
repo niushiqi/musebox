@@ -1546,7 +1546,17 @@ function buildAPIHeaders(provider) {
         // 添加认证头
         const currentProvider = pluginConfig.provider;
         const apiKey = pluginConfig.apiKeys[currentProvider];
+        
+        // 确保API Key只包含ASCII字符
+        if (apiKey && !/^[\x00-\x7F]*$/.test(apiKey)) {
+            throw new Error('API Key包含非法字符，请检查API Key格式');
+        }
+        
+        // 确保authValue也只包含ASCII字符
         const authValue = provider.authFormat.replace('{apiKey}', apiKey);
+        if (!/^[\x00-\x7F]*$/.test(authValue)) {
+            throw new Error('认证头包含非法字符');
+        }
         headers[provider.authHeader] = authValue;
     }
     
@@ -2166,21 +2176,31 @@ async function addAnnotationToSelectedImages() {
 }
 
 // 显示通知
-function showNotification(message, type = 'info') {
+function showNotification(message, type = 'info', duration = 3000) {
     // 创建通知元素
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
     notification.textContent = message;
     
-    // 添加到页面
-    document.body.appendChild(notification);
-    
-    // 3秒后自动移除
-    setTimeout(() => {
+    // 添加移除方法
+    notification.remove = function() {
         if (notification.parentNode) {
             notification.parentNode.removeChild(notification);
         }
-    }, 3000);
+    };
+    
+    // 添加到页面
+    document.body.appendChild(notification);
+    
+    // 如果duration大于0，则自动移除
+    if (duration > 0) {
+        setTimeout(() => {
+            notification.remove();
+        }, duration);
+    }
+    
+    // 返回通知对象，以便手动控制
+    return notification;
 }
 
 // 调试日志函数
@@ -2350,10 +2370,17 @@ function updateModelList(providerKey) {
 
 // 测试API连接
 async function testAPIConnection() {
+    let loadingNotification = null;
+    
     try {
         console.log('🧪 用户点击了"测试API连接"按钮');
         addDebugLog('用户操作：点击"测试API连接"按钮');
         console.log('测试API连接...');
+        
+        // 显示加载中的通知
+        if (window.showNotification) {
+            loadingNotification = window.showNotification('正在测试连接...', 'info', 0); // 0表示不自动消失
+        }
         
         const currentProvider = pluginConfig.provider;
         const apiKey = pluginConfig.apiKeys[currentProvider];
@@ -2503,11 +2530,39 @@ async function testAPIConnection() {
         
         console.log('✅ API连接测试成功');
         addDebugLog('API连接测试成功');
+        
+        // 隐藏加载通知并显示成功通知
+        if (loadingNotification && loadingNotification.remove) {
+            loadingNotification.remove();
+        }
+        if (window.showNotification) {
+            window.showNotification('API连接测试成功!', 'success');
+        }
+        
+        // 更新API配置状态
+        pluginState.settings.apiConfigured = true;
+        
+        // 更新UI状态，隐藏API配置警告
+        if (typeof checkAPIConfigurationUI === 'function') {
+            checkAPIConfigurationUI();
+        } else if (window.checkAPIConfigurationUI) {
+            window.checkAPIConfigurationUI();
+        }
+        
         return true;
         
     } catch (error) {
         console.error('❌ API测试失败:', error);
         addDebugLog(`API测试失败：${error.message}`);
+        
+        // 隐藏加载通知并显示错误通知
+        if (loadingNotification && loadingNotification.remove) {
+            loadingNotification.remove();
+        }
+        if (window.showNotification) {
+            window.showNotification('API连接测试失败: ' + error.message, 'error');
+        }
+        
         throw error;
     }
 }

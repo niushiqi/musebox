@@ -807,6 +807,7 @@ window.testAPIConnection = testAPIConnection;
 window.previewTemplate = previewTemplate;
 window.refreshImageList = refreshImageList;
 window.navigateToAPISettings = navigateToAPISettings;
+window.checkAPIConfigurationUI = checkAPIConfigurationUI;
 
 // 导航到 API 设置并高亮
 function navigateToAPISettings() {
