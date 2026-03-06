@@ -61,6 +61,13 @@ function createNewTemplate() {
             } else if (typeof selectTemplate === 'function') {
                 selectTemplate(template.id);
             }
+            
+            // 更新工作台的模板选择器
+            if (window.updateTemplateSelectors) {
+                window.updateTemplateSelectors();
+            } else if (typeof updateTemplateSelectors === 'function') {
+                updateTemplateSelectors();
+            }
         }
     }, 50);
 }
@@ -3250,6 +3257,13 @@ function createNewTemplate() {
     renderTemplateList();
     selectTemplate(template.id);
     
+    // 更新工作台的模板选择器
+    if (window.updateTemplateSelectors) {
+        window.updateTemplateSelectors();
+    } else if (typeof updateTemplateSelectors === 'function') {
+        updateTemplateSelectors();
+    }
+    
     // 聚焦到名称输入框
     setTimeout(() => {
         const nameInput = document.getElementById('templateNameInput');
@@ -3310,6 +3324,13 @@ function saveCurrentTemplate() {
             // 刷新列表
             renderTemplateList();
             
+            // 更新工作台的模板选择器
+            if (window.updateTemplateSelectors) {
+                window.updateTemplateSelectors();
+            } else if (typeof updateTemplateSelectors === 'function') {
+                updateTemplateSelectors();
+            }
+            
             if (window.showNotification) {
                 window.showNotification('模板已保存', 'success');
             }
@@ -3350,6 +3371,13 @@ function toggleTemplateDefault(templateId) {
     // 刷新列表和编辑器
     renderTemplateList();
     loadTemplateToEditor(templateId);
+    
+    // 更新工作台的模板选择器
+    if (window.updateTemplateSelectors) {
+        window.updateTemplateSelectors();
+    } else if (typeof updateTemplateSelectors === 'function') {
+        updateTemplateSelectors();
+    }
 }
 
 // 删除模板确认
@@ -3367,6 +3395,14 @@ function deleteTemplateConfirm(templateId) {
             window.eagleAutoAnnotation.deleteTemplate(templateId);
             renderTemplateList();
             clearTemplateEditor();
+            
+            // 更新工作台的模板选择器
+            if (window.updateTemplateSelectors) {
+                window.updateTemplateSelectors();
+            } else if (typeof updateTemplateSelectors === 'function') {
+                updateTemplateSelectors();
+            }
+            
             if (window.showNotification) {
                 window.showNotification('模板已删除', 'success');
             }
