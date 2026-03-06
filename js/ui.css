@@ -1186,3 +1186,33 @@ body {
         height: 200px;
     }
 }
+/* 开发中状态样式 */
+.control-row.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: auto;
+}
+
+.control-row.disabled .control-actions {
+    pointer-events: none;
+}
+
+.coming-soon-badge {
+    display: inline-block;
+    background: #f59e0b;
+    color: white;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 8px;
+    margin-left: 8px;
+    font-weight: 500;
+}
+
+.control-actions.disabled {
+    opacity: 0.5;
+}
+
+.toggle.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

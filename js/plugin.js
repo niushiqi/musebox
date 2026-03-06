@@ -3371,3 +3371,12 @@ eagle.onPluginCreate(() => {
         initializeTemplateUI();
     }, 200);
 });
+// 显示开发中提示
+function showComingSoonNotification(feature) {
+    if (window.showNotification) {
+        window.showNotification(`${feature}功能开发中，敬请期待下个版本！`, 'info');
+    }
+}
+
+// 立即将函数添加到全局作用域
+window.showComingSoonNotification = showComingSoonNotification;
