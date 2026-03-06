@@ -1802,17 +1802,26 @@ function loadTokenUsageStats() {
 // 更新UI中token统计显示
 function updateTokenUsageUI() {
     // 更新统计信息
+    const totalTokensElement = document.getElementById('total-tokens');
     const inputTokensElement = document.getElementById('input-tokens');
     const outputTokensElement = document.getElementById('output-tokens');
     const processedCountElement = document.getElementById('processed-count');
     const requestsCountElement = document.getElementById('requests-count');
     
+    const totalInputTokens = pluginState.tokenUsage.totalInputTokens || 0;
+    const totalOutputTokens = pluginState.tokenUsage.totalOutputTokens || 0;
+    const totalTokens = totalInputTokens + totalOutputTokens;
+    
+    if (totalTokensElement) {
+        totalTokensElement.textContent = totalTokens.toLocaleString();
+    }
+    
     if (inputTokensElement) {
-        inputTokensElement.textContent = (pluginState.tokenUsage.totalInputTokens || 0).toLocaleString();
+        inputTokensElement.textContent = totalInputTokens.toLocaleString();
     }
     
     if (outputTokensElement) {
-        outputTokensElement.textContent = (pluginState.tokenUsage.totalOutputTokens || 0).toLocaleString();
+        outputTokensElement.textContent = totalOutputTokens.toLocaleString();
     }
     
     if (processedCountElement) {
@@ -1824,8 +1833,9 @@ function updateTokenUsageUI() {
     }
     
     console.log('📊 UI统计数据已更新:', {
-        totalInputTokens: pluginState.tokenUsage.totalInputTokens,
-        totalOutputTokens: pluginState.tokenUsage.totalOutputTokens,
+        totalTokens: totalTokens,
+        totalInputTokens: totalInputTokens,
+        totalOutputTokens: totalOutputTokens,
         processedImages: pluginState.processedImages.size,
         requests: pluginState.tokenUsage.requests
     });
@@ -3380,3 +3390,47 @@ function showComingSoonNotification(feature) {
 
 // 立即将函数添加到全局作用域
 window.showComingSoonNotification = showComingSoonNotification;
+// 导航到使用统计
+function navigateToUsageStats() {
+    // 切换到设置页面
+    if (typeof switchTab === 'function') {
+        switchTab('settings');
+    } else if (window.switchTab) {
+        window.switchTab('settings');
+    }
+    
+    // 延迟一下让页面切换完成，然后滚动到使用统计区域
+    setTimeout(() => {
+        // 查找使用统计标题
+        const allH3 = document.querySelectorAll('.settings-section h3');
+        let statsSection = null;
+        
+        for (const h3 of allH3) {
+            if (h3.textContent.includes('使用统计')) {
+                statsSection = h3.closest('.settings-section');
+                break;
+            }
+        }
+        
+        if (statsSection) {
+            // 添加高亮类
+            statsSection.classList.add('highlight');
+            
+            // 滚动到该区域
+            statsSection.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center'
+            });
+            
+            // 2秒后移除高亮类
+            setTimeout(() => {
+                statsSection.classList.remove('highlight');
+            }, 2000);
+        } else {
+            console.warn('未找到使用统计区域');
+        }
+    }, 200);
+}
+
+// 立即将函数添加到全局作用域
+window.navigateToUsageStats = navigateToUsageStats;

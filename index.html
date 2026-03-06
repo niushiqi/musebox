@@ -171,13 +171,20 @@
                         </div>
                     </div>
 
-                    <!-- 开始按钮 -->
-                    <button class="btn btn-primary" id="startBtn" onclick="handleStartProcessing()">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                        </svg>
-                        开始处理
-                    </button>
+                    <!-- 开始按钮和使用统计 -->
+                    <div class="start-button-container">
+                        <button class="btn btn-primary" id="startBtn" onclick="handleStartProcessing()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                            </svg>
+                            开始处理
+                        </button>
+
+                        <!-- 使用统计链接 -->
+                        <div class="usage-stats-link" onclick="navigateToUsageStats()">
+                            使用统计
+                        </div>
+                    </div>
 
                     <!-- 进度条 -->
                     <div class="progress-section" id="progressSection" style="display: none;">
@@ -192,7 +199,7 @@
                 </div>
 
                 <!-- 自动模式 -->
-                <div class="auto-mode">
+                <!-- <div class="auto-mode">
                     <div class="auto-mode-info">
                         <div class="auto-mode-icon">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -208,7 +215,7 @@
                         <input type="checkbox" id="autoModeToggle">
                         <span class="toggle-slider"></span>
                     </label>
-                </div>
+                </div> -->
 
                 <!-- 预览队列 -->
                 <div class="preview-section">
@@ -369,6 +376,10 @@
                     <h3 class="section-title">使用统计</h3>
                     <div class="stats-grid">
                         <div class="stat-card">
+                            <div class="stat-value" id="total-tokens">0</div>
+                            <div class="stat-label">总 Token</div>
+                        </div>
+                        <div class="stat-card">
                             <div class="stat-value" id="input-tokens">0</div>
                             <div class="stat-label">输入 Token</div>
                         </div>
@@ -376,10 +387,10 @@
                             <div class="stat-value" id="output-tokens">0</div>
                             <div class="stat-label">输出 Token</div>
                         </div>
-                        <div class="stat-card">
+                        <!-- <div class="stat-card">
                             <div class="stat-value" id="processed-count">0</div>
                             <div class="stat-label">已处理图片</div>
-                        </div>
+                        </div> -->
                         <div class="stat-card">
                             <div class="stat-value" id="requests-count">0</div>
                             <div class="stat-label">API 请求</div>
