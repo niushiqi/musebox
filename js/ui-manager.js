@@ -180,10 +180,15 @@ async function refreshImageList() {
         const selectedImages = await eagle.item.getSelected();
         uiState.images = selectedImages || [];
         
-        // 更新计数
+        // 更新计数（两个位置）
         const countElement = document.getElementById('imageCount');
+        const previewCountElement = document.getElementById('previewCount');
+        
         if (countElement) {
             countElement.textContent = uiState.images.length;
+        }
+        if (previewCountElement) {
+            previewCountElement.textContent = uiState.images.length;
         }
         
         // 渲染网格
@@ -229,7 +234,9 @@ function renderImageGrid() {
         const statusText = getImageStatusText(image);
         const statusClass = getImageStatusClass(image);
         
-        item.classList.add(statusClass);
+        if (statusClass) {
+            item.classList.add(statusClass);
+        }
         
         item.innerHTML = `
             <div class="image-preview">

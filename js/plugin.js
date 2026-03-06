@@ -2341,6 +2341,8 @@ window.eagleAutoAnnotation = {
     buildAPIRequest,        // 导出API请求构建函数
     buildAPIHeaders,        // 导出API请求头构建函数
     getAPIUrl,             // 导出API URL获取函数
+    generateImageAnnotation, // 导出图片注释生成函数
+    addAnnotationToImage,   // 导出添加注释函数
     pluginConfig,
     pluginState,
     aiProviders
