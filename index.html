@@ -11,27 +11,16 @@
         <!-- 标签页导航 -->
         <div class="tabs">
             <div class="tab active" data-tab="dashboard">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="3" width="7" height="7"></rect>
-                    <rect x="14" y="3" width="7" height="7"></rect>
-                    <rect x="14" y="14" width="7" height="7"></rect>
-                    <rect x="3" y="14" width="7" height="7"></rect>
-                </svg>
-                工作台
+                <svg width="16" height="16" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 18V42H39V18L24 6L9 18Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 29V42H29V29H19Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M9 42H39" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
+                图片处理
             </div>
             <div class="tab" data-tab="templates">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                </svg>
+                <svg width="16" height="16" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M23 4H4V26H23V4Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M44 34H4V43H44V34Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M44 4H31V12H44V4Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M44 18H31V26H44V18Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/></svg>
                 模板管理
             </div>
             <div class="tab" data-tab="settings">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path d="M12 1v6m0 6v6m5.2-13.2l-4.2 4.2m0 6l4.2 4.2M23 12h-6m-6 0H1m18.2 5.2l-4.2-4.2m0-6l4.2-4.2"></path>
-                </svg>
-                设置
+                <svg width="16" height="16" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M24 4L18 10H10V18L4 24L10 30V38H18L24 44L30 38H38V30L44 24L38 18V10H30L24 4Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M24 30C27.3137 30 30 27.3137 30 24C30 20.6863 27.3137 18 24 18C20.6863 18 18 20.6863 18 24C18 27.3137 20.6863 30 24 30Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/></svg>
+                插件设置
             </div>
         </div>
 
@@ -243,10 +232,10 @@
 
             <!-- 模板管理页面 -->
             <div id="templates" class="tab-content">
-                <div class="page-header">
+                <!-- <div class="page-header">
                     <h2>模板管理</h2>
                     <p class="page-desc">创建和管理您的 AI 提示词模板</p>
-                </div>
+                </div> -->
 
                 <!-- 模板类型标签页 -->
                 <div class="template-tabs">
@@ -305,14 +294,14 @@
 
             <!-- 设置页面 -->
             <div id="settings" class="tab-content">
-                <div class="page-header">
+                <!-- <div class="page-header">
                     <h2>设置</h2>
                     <p class="page-desc">配置 AI 服务和处理偏好</p>
-                </div>
+                </div> -->
 
                 <!-- API 配置 -->
                 <div class="settings-section" id="aiConfigSection">
-                    <h3 class="section-title">AI 服务配置</h3>
+                    <h3 class="section-title">大模型</h3>
                     
                     <div class="form-group">
                         <label class="form-label">服务商</label>
@@ -346,7 +335,7 @@
 
                 <!-- 处理偏好 -->
                 <div class="settings-section">
-                    <h3 class="section-title">处理偏好</h3>
+                    <h3 class="section-title">个性化</h3>
                     
                     <div class="setting-item">
                         <div class="setting-info">
