@@ -203,10 +203,14 @@ async function refreshImageList() {
         // 渲染网格
         renderImageGrid();
         
+        // 更新状态图标
+        updateStatusIcon();
+        
     } catch (error) {
         console.error('刷新图片列表失败:', error);
         uiState.images = [];
         renderImageGrid();
+        updateStatusIcon();
     }
 }
 
@@ -262,6 +266,9 @@ function renderImageGrid() {
     
     // 更新分页信息
     updatePaginationInfo();
+    
+    // 更新状态图标为缩略图
+    updateStatusIcon();
 }
 
 // 获取图片状态文本
@@ -814,6 +821,40 @@ eagle.onPluginShow(() => {
     console.log('插件显示');
     refreshImageList();
 });
+
+// 更新状态图标为缩略图
+function updateStatusIcon() {
+    const container = document.getElementById('statusIconContainer');
+    if (!container) return;
+    
+    const images = uiState.images;
+    
+    if (images.length === 0) {
+        // 显示默认图标
+        container.innerHTML = `
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+        `;
+        container.className = 'status-icon';
+    } else {
+        // 显示缩略图堆叠效果，最多显示3张，最后选择的在最上面
+        const displayImages = images.slice(-3).reverse();
+        container.innerHTML = displayImages.map((img, index) => {
+            const size = 44 - index * 2; // 最上面的图片最小
+            const rotation = index === 0 ? 0 : (index - 1) * 8 + 8; // 最上面的图片不旋转
+            return `
+                <img src="${img.thumbnailURL || img.fileURL}" 
+                     alt="${img.name}" 
+                     class="status-thumbnail" 
+                     style="z-index: ${displayImages.length - index}; transform: rotate(${rotation}deg); width: ${size}px; height: ${size}px; margin-left: ${-size/2}px; margin-top: ${-size/2}px;">
+            `;
+        }).join('');
+        container.className = 'status-icon has-images';
+    }
+}
 
 // 导出函数供全局使用
 window.handleStartProcessing = handleStartProcessing;

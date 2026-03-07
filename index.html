@@ -45,7 +45,7 @@
                 <!-- 图片状态卡片 -->
                 <div id="imageStatusCard" class="image-status-card">
                     <div class="status-header">
-                        <div class="status-icon">
+                        <div class="status-icon" id="statusIconContainer">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                                 <circle cx="8.5" cy="8.5" r="1.5"></circle>
@@ -78,8 +78,8 @@
                             </svg>
                         </div>
                         <div class="control-info">
-                            <div class="control-title">生成注释</div>
-                            <div class="control-desc">使用 AI 描述图片内容</div>
+                            <div class="control-title">添加注释</div>
+                            <!-- <div class="control-desc">使用 AI 描述图片内容</div> -->
                         </div>
                         <div class="control-actions">
                             <select class="form-select" id="annotation-template" onchange="updateSelectedTemplate('annotation')">
@@ -107,8 +107,8 @@
                             </svg>
                         </div>
                         <div class="control-info">
-                            <div class="control-title">生成标签 <span class="coming-soon-badge">开发中</span></div>
-                            <div class="control-desc">自动生成相关标签</div>
+                            <div class="control-title">添加标签 <span class="coming-soon-badge">开发中</span></div>
+                            <!-- <div class="control-desc">自动生成相关标签</div> -->
                         </div>
                         <div class="control-actions disabled">
                             <select class="form-select" id="tag-template" disabled>
@@ -136,7 +136,7 @@
                         </div>
                         <div class="control-info">
                             <div class="control-title">重命名 <span class="coming-soon-badge">开发中</span></div>
-                            <div class="control-desc">根据内容重命名文件</div>
+                            <!-- <div class="control-desc">根据内容重命名文件</div> -->
                         </div>
                         <div class="control-actions disabled">
                             <select class="form-select" id="rename-template" disabled>
