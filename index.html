@@ -31,18 +31,16 @@
                 <!-- API 配置提示 -->
                 <div id="apiWarning" class="api-warning" style="display: none;">
                     <div class="warning-icon">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-                        </svg>
+                        <svg width="32" height="32" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M24 44C29.5228 44 34.5228 41.7614 38.1421 38.1421C41.7614 34.5228 44 29.5228 44 24C44 18.4772 41.7614 13.4772 38.1421 9.85786C34.5228 6.23858 29.5228 4 24 4C18.4772 4 13.4772 6.23858 9.85786 9.85786C6.23858 13.4772 4 18.4772 4 24C4 29.5228 6.23858 34.5228 9.85786 38.1421C13.4772 41.7614 18.4772 44 24 44Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path fill-rule="evenodd" clip-rule="evenodd" d="M24 37C25.3807 37 26.5 35.8807 26.5 34.5C26.5 33.1193 25.3807 32 24 32C22.6193 32 21.5 33.1193 21.5 34.5C21.5 35.8807 22.6193 37 24 37Z" fill="currentColor"/><path d="M24 12V28" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </div>
                     <div class="warning-content">
-                        <h3>欢迎使用 Eagle AI Tagger!</h3>
-                        <p>检测到您尚未配置 API Key。为了开始使用 AI 自动打标功能，请先前往设置页面配置您的 Gemini API Key。</p>
+                        <h3>温馨提示</h3>
+                        <p>检测到您尚未完成大模型配置，请先前往设置页面配置API Key。</p>
                         <button class="warning-btn" onclick="navigateToAPISettings()">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <!-- <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
-                            </svg>
-                            去配置 API Key
+                            </svg> -->
+                            去配置
                         </button>
                     </div>
                 </div>
@@ -315,6 +313,7 @@
 
                     <div class="form-group">
                         <label class="form-label">API Key</label>
+                        <p style="font-size: 12px; color: #94a3b8; margin: 0 0 8px 0; line-height: 1.4;">访问大模型服务的重要凭证。在服务商网站上，选择使用API接入，然后创建API key，复制粘贴到此处</p>
                         <input type="password" class="form-input" id="apiKey" placeholder="请输入 API Key">
                     </div>
 
@@ -323,11 +322,6 @@
                         <select class="form-input" id="model">
                             <!-- 动态填充 -->
                         </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">最大 Token 数</label>
-                        <input type="number" class="form-input" id="maxTokens" value="200" min="50" max="4000">
                     </div>
 
                     <button class="btn btn-secondary" onclick="testAPIConnection()">测试连接</button>
