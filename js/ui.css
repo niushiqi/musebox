@@ -87,61 +87,52 @@ body {
 
 /* API 配置警告 */
 .api-warning {
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-    border-radius: 12px;
-    padding: 24px;
-    margin-bottom: 24px;
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    border-right: none;
+    border-top: none;
+    border-bottom: none;
+    border-radius: 0;
+    padding: 14px 20px;
+    margin: -24px -24px 24px -24px;
     display: flex;
-    align-items: flex-start;
-    gap: 16px;
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
-    color: white;
-}
-
-.warning-icon {
-    background: rgba(255, 255, 255, 0.2);
-    padding: 12px;
-    border-radius: 12px;
-    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    color: #92400e;
+    font-size: 13px;
+    line-height: 1.5;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
 }
 
 .warning-content {
     flex: 1;
-}
-
-.warning-content h3 {
-    font-size: 20px;
-    font-weight: 700;
-    margin: 0 0 8px 0;
-}
-
-.warning-content p {
-    font-size: 14px;
-    line-height: 1.6;
-    margin: 0 0 16px 0;
-    color: rgba(255, 255, 255, 0.9);
-}
-
-.warning-btn {
-    background: white;
-    color: #6366f1;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 14px;
-    cursor: pointer;
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 8px;
-    transition: all 0.2s;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-size: 14px;
 }
 
-.warning-btn:hover {
-    background: #f0f0ff;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+.warning-content svg {
+    flex-shrink: 0;
+}
+
+.warning-close {
+    background: none;
+    border: none;
+    color: #92400e;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.warning-close:hover {
+    background: rgba(146, 64, 14, 0.1);
 }
 
 /* 图片状态卡片 */

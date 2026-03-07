@@ -66,21 +66,9 @@ function checkAPIConfigurationUI() {
     if (!apiKey) {
         // 显示警告
         if (apiWarning) apiWarning.style.display = 'flex';
-        // 禁用控制面板
-        if (imageStatusCard) imageStatusCard.style.opacity = '0.5';
-        if (controlPanel) {
-            controlPanel.style.opacity = '0.5';
-            controlPanel.style.pointerEvents = 'none';
-        }
     } else {
         // 隐藏警告
         if (apiWarning) apiWarning.style.display = 'none';
-        // 启用控制面板
-        if (imageStatusCard) imageStatusCard.style.opacity = '1';
-        if (controlPanel) {
-            controlPanel.style.opacity = '1';
-            controlPanel.style.pointerEvents = 'auto';
-        }
     }
 }
 
@@ -208,7 +196,7 @@ async function refreshImageList() {
             if (uiState.images.length === 0) {
                 statusTextElement.textContent = '请在eagle中至少选择一张图片';
             } else {
-                statusTextElement.textContent = '准备在 Eagle 中处理';
+                statusTextElement.textContent = '';
             }
         }
         
@@ -320,6 +308,21 @@ function updatePaginationInfo() {
 async function handleStartProcessing() {
     if (uiState.processing) {
         showNotification('正在处理中,请稍候...', 'warning');
+        return;
+    }
+    
+    // 检查API配置
+    if (!window.eagleAutoAnnotation) {
+        showNotification('插件核心模块未加载', 'error');
+        return;
+    }
+    
+    const { pluginConfig } = window.eagleAutoAnnotation;
+    const currentProvider = pluginConfig.provider;
+    const apiKey = pluginConfig.apiKeys[currentProvider];
+    
+    if (!apiKey) {
+        showNotification('请先到设置页面配置大模型', 'warning');
         return;
     }
     
@@ -882,11 +885,6 @@ async function refreshImageListWithAnimation(button) {
     
     try {
         await refreshImageList();
-        
-        // 显示成功提示
-        if (window.showNotification) {
-            window.showNotification(`已刷新，当前选中 ${uiState.images.length} 张图片`, 'success');
-        }
         
     } catch (error) {
         console.error('刷新失败:', error);
