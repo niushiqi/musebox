@@ -335,9 +335,10 @@ function updateTemplateSelectors() {
 // 插件配置
 const pluginConfig = {
     // AI服务商配置
-    provider: 'volcano', // 服务商：volcano, alibaba, google, zhipu, custom
+    provider: 'volcano', // 服务商：volcano, ollama, alibaba, google, zhipu, custom
     apiKeys: { // 每个服务商的API密钥
         volcano: '',
+        ollama: '',
         alibaba: '',
         google: '',
         zhipu: '',
@@ -345,6 +346,7 @@ const pluginConfig = {
     },
     apiUrls: { // 每个服务商的API地址
         volcano: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
+        ollama: 'http://localhost:8000/api/v3/chat/completions',
         alibaba: 'https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
         google: 'https://generativelanguage.googleapis.com/v1beta/models',
         zhipu: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
@@ -352,6 +354,7 @@ const pluginConfig = {
     },
     models: { // 每个服务商的模型
         volcano: 'doubao-seed-1-6-250615',
+        ollama: 'qwen2.5-vl-3b',
         alibaba: 'qwen-vl-max-latest',
         google: 'gemini-2.5-flash',
         zhipu: 'GLM-4.5V',
@@ -371,6 +374,33 @@ const pluginConfig = {
 
 // AI服务商配置
 const aiProviders = {
+    ollama: {
+        name: '本机部署模型（免费·本地算力）',
+        baseUrl: 'http://localhost:8000/api/v3/chat/completions',
+        models: [
+            { 
+                value: 'qwen2.5-vl-3b', 
+                label: 'Qwen2.5-VL-3B', 
+                apiName: 'qwen2.5-vl-3b',
+                description: '本地部署, 轻量快速'
+            },
+            { 
+                value: 'qwen2.5-vl-7b', 
+                label: 'Qwen2.5-VL-7B', 
+                apiName: 'qwen2.5-vl-7b',
+                description: '本地部署, 平衡性能'
+            },
+            { 
+                value: 'llava', 
+                label: 'LLaVA', 
+                apiName: 'llava',
+                description: '本地部署, 开源模型'
+            }
+        ],
+        authHeader: 'Authorization',
+        authFormat: 'Bearer {apiKey}',
+        requestFormat: 'openai'
+    },
     volcano: {
         name: '火山方舟',
         baseUrl: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
