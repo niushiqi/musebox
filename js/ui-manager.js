@@ -56,8 +56,7 @@ function checkAPIConfigurationUI() {
     if (!window.eagleAutoAnnotation) return;
     
     const { pluginConfig } = window.eagleAutoAnnotation;
-    const currentProvider = pluginConfig.provider;
-    const apiKey = pluginConfig.apiKeys[currentProvider];
+    const apiKey = pluginConfig.apiKey;
     
     const apiWarning = document.getElementById('apiWarning');
     const imageStatusCard = document.getElementById('imageStatusCard');
@@ -325,8 +324,7 @@ async function handleStartProcessing() {
     }
     
     const { pluginConfig } = window.eagleAutoAnnotation;
-    const currentProvider = pluginConfig.provider;
-    const apiKey = pluginConfig.apiKeys[currentProvider];
+    const apiKey = pluginConfig.apiKey;
     
     if (!apiKey) {
         showNotification('请先到设置页面配置大模型', 'warning');
@@ -445,8 +443,7 @@ async function processImageWithAI(image, options) {
     const { pluginConfig, generateImageAnnotation, addAnnotationToImage } = window.eagleAutoAnnotation;
     
     // 检查 API 配置
-    const currentProvider = pluginConfig.provider;
-    const apiKey = pluginConfig.apiKeys[currentProvider];
+    const apiKey = pluginConfig.apiKey;
     
     if (!apiKey) {
         throw new Error('API 密钥未配置');
@@ -567,7 +564,7 @@ function loadConfigToUI() {
     // 加载 API Key
     const apiKeyInput = document.getElementById('apiKey');
     if (apiKeyInput) {
-        apiKeyInput.value = pluginConfig.apiKeys[pluginConfig.provider] || '';
+        apiKeyInput.value = pluginConfig.apiKey || '';
     }
     
     // 加载最大 Token
@@ -604,6 +601,11 @@ function handleProviderChange() {
     
     if (!providerInfo) return;
     
+    // 切换服务商时清空API Key和模型
+    pluginConfig.provider = provider;
+    pluginConfig.apiKey = '';
+    pluginConfig.model = '';
+    
     // 更新模型列表
     modelSelect.innerHTML = '';
     providerInfo.models.forEach(model => {
@@ -617,13 +619,13 @@ function handleProviderChange() {
     });
     
     // 设置当前模型
-    if (pluginConfig.models[provider]) {
-        modelSelect.value = pluginConfig.models[provider];
+    if (pluginConfig.model) {
+        modelSelect.value = pluginConfig.model;
     }
     
-    // 加载对应的 API Key
+    // 清空 API Key 输入框
     if (apiKeyInput) {
-        apiKeyInput.value = pluginConfig.apiKeys[provider] || '';
+        apiKeyInput.value = '';
     }
 }
 
@@ -647,12 +649,12 @@ function saveSettings() {
     }
     
     if (apiKey) {
-        pluginConfig.apiKeys[provider] = apiKey;
+        pluginConfig.apiKey = apiKey;
         pluginState.settings.apiConfigured = true;
     }
     
     if (model) {
-        pluginConfig.models[provider] = model;
+        pluginConfig.model = model;
     }
     
     pluginConfig.maxTokens = maxTokens;

@@ -334,35 +334,14 @@ function updateTemplateSelectors() {
 
 // 插件配置
 const pluginConfig = {
-    // AI服务商配置
-    provider: 'volcano', // 服务商：volcano, alibaba, google, zhipu, custom
-    apiKeys: { // 每个服务商的API密钥
-        volcano: '',
-        alibaba: '',
-        google: '',
-        zhipu: '',
-        custom: ''
-    },
-    apiUrls: { // 每个服务商的API地址
-        volcano: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
-        alibaba: 'https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
-        google: 'https://generativelanguage.googleapis.com/v1beta/models',
-        zhipu: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
-        custom: ''
-    },
-    models: { // 每个服务商的模型
-        volcano: 'doubao-seed-1-6-250615',
-        alibaba: 'qwen-vl-max-latest',
-        google: 'gemini-2.5-flash',
-        zhipu: 'GLM-4.5V',
-        custom: ''
-    },
-    maxTokens: 200, // 注释最大长度
-    autoAnnotation: false, // 是否启用自动注释
-    customModels: {}, // 自定义模型配置 {provider: {models: []}} 
-    // 模板管理
-    templates: [], // 模板列表
-    activeTemplateIds: { // 当前激活的模板ID
+    provider: 'volcano',
+    apiKey: '',
+    model: '',
+    maxTokens: 200,
+    autoAnnotation: false,
+    customModels: {},
+    templates: [],
+    activeTemplateIds: {
         annotation: '',
         tag: '',
         rename: ''
@@ -592,78 +571,25 @@ function checkAPIConfiguration() {
     try {
         console.log('📦 开始检查API配置...');
         
-        // 从本地存储读取API配置
         const savedConfig = localStorage.getItem('eagleAutoAnnotationConfig');
         
         if (savedConfig) {
             console.log('📝 发现已保存的配置，正在加载...');
             const config = JSON.parse(savedConfig);
             
-            // 记录加载的配置（隐藏API密钥）
-            console.log('📄 加载的配置数据:', {
-                provider: config.provider,
-                apiKeys: Object.keys(config.apiKeys || {}).reduce((acc, key) => {
-                    const apiKey = config.apiKeys[key];
-                    acc[key] = apiKey ? `★★★★${apiKey.slice(-4)}` : '未设置';
-                    return acc;
-                }, {}),
-                models: config.models,
-                maxTokens: config.maxTokens,
-                lastSaved: config.lastSaved
-            });
-            
-            // 加载当前服务商
-            const originalProvider = pluginConfig.provider;
-            pluginConfig.provider = config.provider || 'openai';
-            console.log(`🎯 服务商设置: ${originalProvider} -> ${pluginConfig.provider}`);
-            
-            // 加载各服务商的API密钥
-            if (config.apiKeys) {
-                Object.keys(config.apiKeys).forEach(provider => {
-                    const oldKey = pluginConfig.apiKeys[provider];
-                    const newKey = config.apiKeys[provider] || '';
-                    pluginConfig.apiKeys[provider] = newKey;
-                    
-                    if (oldKey !== newKey) {
-                        console.log(`🔑 ${provider} API密钥更新: ${oldKey ? '已设置' : '未设置'} -> ${newKey ? '已设置' : '未设置'}`);
-                    }
-                });
-            }
-            
-            // 加载各服务商的API地址
-            if (config.apiUrls) {
-                Object.keys(config.apiUrls).forEach(provider => {
-                    pluginConfig.apiUrls[provider] = config.apiUrls[provider] || '';
-                });
-            }
-            
-            // 加载各服务商的模型
-            if (config.models) {
-                Object.keys(config.models).forEach(provider => {
-                    const oldModel = pluginConfig.models[provider];
-                    const newModel = config.models[provider] || '';
-                    pluginConfig.models[provider] = newModel;
-                    
-                    if (oldModel !== newModel) {
-                        console.log(`🤖 ${provider} 模型更新: ${oldModel} -> ${newModel}`);
-                    }
-                });
-            }
-            
-            // 兼容旧版本配置
-            if (config.apiKey) {
-                console.log('🔄 检测到旧版本配置，正在迁移...');
-                pluginConfig.apiKeys[pluginConfig.provider] = config.apiKey;
-            }
-            if (config.apiUrl) {
-                pluginConfig.apiUrls[pluginConfig.provider] = config.apiUrl;
-            }
-            if (config.model) {
-                pluginConfig.models[pluginConfig.provider] = config.model;
-            }
-            
+            pluginConfig.provider = config.provider || 'volcano';
+            pluginConfig.apiKey = config.apiKey || '';
+            pluginConfig.model = config.model || '';
             pluginConfig.maxTokens = config.maxTokens || 200;
             pluginConfig.customModels = config.customModels || {};
+            
+            // 兼容旧版本多服务商配置
+            if (!config.apiKey && config.apiKeys) {
+                pluginConfig.apiKey = config.apiKeys[pluginConfig.provider] || '';
+            }
+            if (!config.model && config.models) {
+                pluginConfig.model = config.models[pluginConfig.provider] || '';
+            }
             
             // 加载模板数据
             if (config.templates && Array.isArray(config.templates)) {
@@ -673,44 +599,27 @@ function checkAPIConfiguration() {
                 pluginConfig.activeTemplateIds = config.activeTemplateIds;
             }
             
-            // 检查当前服务商是否已配置
-            const currentProvider = pluginConfig.provider;
-            const currentApiKey = pluginConfig.apiKeys[currentProvider];
-            const wasConfigured = pluginState.settings.apiConfigured;
-            pluginState.settings.apiConfigured = !!currentApiKey;
-            
-            console.log(`🔍 当前服务商 [${currentProvider}] 配置状态: ${wasConfigured} -> ${pluginState.settings.apiConfigured}`);
-            
-            // 加载其他设置
+            pluginState.settings.apiConfigured = !!pluginConfig.apiKey;
             pluginState.settings.autoAnnotation = config.autoAnnotation !== undefined ? config.autoAnnotation : false;
             pluginState.settings.manualAnnotation = config.manualAnnotation !== undefined ? config.manualAnnotation : true;
             pluginState.settings.skipExistingAnnotations = config.skipExistingAnnotations !== undefined ? config.skipExistingAnnotations : true;
             pluginState.settings.skipProcessedImages = config.skipProcessedImages !== undefined ? config.skipProcessedImages : true;
             
-            console.log('✅ 配置加载成功！最终配置:', {
+            console.log('✅ 配置加载成功:', {
                 provider: pluginConfig.provider,
                 apiConfigured: pluginState.settings.apiConfigured,
-                autoAnnotation: pluginState.settings.autoAnnotation,
-                manualAnnotation: pluginState.settings.manualAnnotation
+                model: pluginConfig.model
             });
             
-            // v1.8.1 新增：配置加载完成后立即同步到UI
             setTimeout(() => {
                 syncConfigurationToUI();
             }, 100);
             
         } else {
             console.log('🆕 未找到保存的配置，使用默认配置');
-            console.log('📄 默认配置:', {
-                provider: pluginConfig.provider,
-                apiConfigured: pluginState.settings.apiConfigured
-            });
         }
     } catch (error) {
         console.error('❌ 加载配置时出错:', error);
-        console.error('错误堆栈:', error.stack);
-        // 如果配置损坏，重置为默认值
-        console.log('🔄 配置损坏，重置为默认配置');
         resetToDefaultConfig();
     }
 }
@@ -722,7 +631,7 @@ function setupEventListeners() {
         autoAnnotation: pluginState.settings.autoAnnotation,
         apiConfigured: pluginState.settings.apiConfigured,
         provider: pluginConfig.provider,
-        hasApiKey: !!pluginConfig.apiKeys[pluginConfig.provider]
+        hasApiKey: !!pluginConfig.apiKey
     });
     
     let eventListenerSetup = false;
@@ -1067,9 +976,9 @@ function diagnoseAutoAnnotationIssues() {
         },
         config: {
             provider: pluginConfig.provider,
-            hasApiKey: !!pluginConfig.apiKeys[pluginConfig.provider],
-            apiKeyLength: pluginConfig.apiKeys[pluginConfig.provider]?.length || 0,
-            model: pluginConfig.models[pluginConfig.provider],
+            hasApiKey: !!pluginConfig.apiKey,
+            apiKeyLength: pluginConfig.apiKey?.length || 0,
+            model: pluginConfig.model,
             maxTokens: pluginConfig.maxTokens
         },
         eagle: {
@@ -1351,7 +1260,7 @@ async function generateImageAnnotation(imageData) {
         
         // 检查API配置
         const currentProvider = pluginConfig.provider;
-        const apiKey = pluginConfig.apiKeys[currentProvider];
+        const apiKey = pluginConfig.apiKey;
         if (!apiKey) {
             throw new Error(`${aiProviders[currentProvider]?.name || '当前服务商'}的API密钥未配置`);
         }
@@ -1368,7 +1277,7 @@ async function generateImageAnnotation(imageData) {
         }
         
         // 获取当前服务商的模型
-        const model = pluginConfig.models[currentProvider];
+        const model = pluginConfig.model;
         
         console.log('使用服务商:', provider.name);
         console.log('使用模型:', model);
@@ -1591,8 +1500,7 @@ function buildAPIHeaders(provider) {
     // Google AI Studio使用URL参数认证，不需要请求头
     if (provider.requestFormat !== 'google') {
         // 添加认证头
-        const currentProvider = pluginConfig.provider;
-        const apiKey = pluginConfig.apiKeys[currentProvider];
+        const apiKey = pluginConfig.apiKey;
         
         // 确保API Key只包含ASCII字符
         if (apiKey && !/^[\x00-\x7F]*$/.test(apiKey)) {
@@ -1613,16 +1521,14 @@ function buildAPIHeaders(provider) {
 // 获取API URL
 function getAPIUrl(provider) {
     const currentProvider = pluginConfig.provider;
-    const apiUrl = pluginConfig.apiUrls[currentProvider];
     
-    if (currentProvider === 'custom' && apiUrl) {
-        return apiUrl;
+    if (currentProvider === 'custom') {
+        return provider.baseUrl;
     }
     
     if (provider.requestFormat === 'google') {
-        // Google AI Studio的正确URL格式
-        const model = pluginConfig.models[currentProvider];
-        const apiKey = pluginConfig.apiKeys[currentProvider];
+        const model = pluginConfig.model;
+        const apiKey = pluginConfig.apiKey;
         return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
     }
     
@@ -2344,9 +2250,8 @@ function saveConfiguration() {
         
         const config = {
             provider: selectedProvider,
-            apiKeys: pluginConfig.apiKeys,
-            apiUrls: pluginConfig.apiUrls,
-            models: pluginConfig.models,
+            apiKey: pluginConfig.apiKey,
+            model: pluginConfig.model,
             maxTokens: pluginConfig.maxTokens,
             autoAnnotation: pluginState.settings.autoAnnotation,
             manualAnnotation: pluginState.settings.manualAnnotation,
@@ -2402,8 +2307,8 @@ function syncConfigurationToUI() {
     const event = new CustomEvent('eagleConfigLoaded', {
         detail: {
             provider: pluginConfig.provider,
-            apiKeys: pluginConfig.apiKeys,
-            models: pluginConfig.models,
+            apiKey: pluginConfig.apiKey,
+            model: pluginConfig.model,
             settings: pluginState.settings
         }
     });
@@ -2440,8 +2345,8 @@ async function testAPIConnection() {
         }
         
         const currentProvider = pluginConfig.provider;
-        const apiKey = pluginConfig.apiKeys[currentProvider];
-        const model = pluginConfig.models[currentProvider];
+        const apiKey = pluginConfig.apiKey;
+        const model = pluginConfig.model;
         
         if (!apiKey) {
             throw new Error(`${aiProviders[currentProvider]?.name || '当前服务商'}的API密钥未配置`);
