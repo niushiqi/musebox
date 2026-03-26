@@ -554,9 +554,16 @@ function loadConfigToUI() {
     
     const { pluginConfig, pluginState, aiProviders } = window.eagleAutoAnnotation;
     
-    // 加载服务商
+    // 动态填充服务商列表
     const providerSelect = document.getElementById('provider');
-    if (providerSelect) {
+    if (providerSelect && aiProviders) {
+        providerSelect.innerHTML = '';
+        Object.keys(aiProviders).forEach(key => {
+            const option = document.createElement('option');
+            option.value = key;
+            option.textContent = aiProviders[key].name;
+            providerSelect.appendChild(option);
+        });
         providerSelect.value = pluginConfig.provider;
         handleProviderChange();
     }
