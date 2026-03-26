@@ -389,6 +389,25 @@ const aiProviders = {
         authFormat: 'Bearer {apiKey}',
         requestFormat: 'alibaba'
     },
+    siliconflow: {
+        name: '硅基流动',
+        baseUrl: 'https://api.siliconflow.cn/v1/chat/completions',
+        models: [
+            { 
+                value: 'Pro/moonshotai/Kimi-K2.5', 
+                label: 'Kimi-K2.5 (Pro)', 
+                description: ''
+            },
+            { 
+                value: 'zai-org/GLM-4.6V', 
+                label: 'GLM-4.6V', 
+                description: ''
+            }
+        ],
+        authHeader: 'Authorization',
+        authFormat: 'Bearer {apiKey}',
+        requestFormat: 'openai'
+    },
     zhipu: {
         name: '智谱AI开放平台',
         baseUrl: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
@@ -1518,7 +1537,7 @@ function parseAPIResponse(provider, result) {
     
     switch (provider.requestFormat) {
         case 'openai':
-            content = result.choices[0].message.content.trim();
+            content = (result.choices[0].message.content || result.choices[0].message.reasoning_content || '').trim();
             if (result.usage) {
                 tokenUsage = {
                     promptTokens: result.usage.prompt_tokens || 0,
