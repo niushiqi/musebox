@@ -357,20 +357,12 @@ const aiProviders = {
             { 
                 value: 'doubao-seed-1-6-250615', 
                 label: '豆包Seed 1.6', 
-                apiName: 'doubao-seed-1-6-250615',
                 description: '新一代, 高质量'
             },
             { 
                 value: 'doubao-seed-1-6-flash-250828', 
                 label: '豆包Seed 1.6 Flash', 
-                apiName: 'doubao-seed-1-6-flash-250828',
                 description: '快速响应, 高效'
-            },
-            { 
-                value: 'ep-自定义端点', 
-                label: '自定义Endpoint端点', 
-                apiName: 'ep-xxxxxx',
-                description: '使用自定义端点ID (格式: ep-xxxxxx)'
             }
         ],
         authHeader: 'Authorization',
@@ -384,13 +376,11 @@ const aiProviders = {
             { 
                 value: 'qwen-vl-max-latest', 
                 label: '通义千问 VL Max', 
-                apiName: 'qwen-vl-max-latest',
                 description: '顶级模型, 最强能力'
             },
             { 
                 value: 'qwen-vl-plus-latest', 
                 label: '通义千问 VL Plus', 
-                apiName: 'qwen-vl-plus-latest',
                 description: '平衡性能, 推荐使用'
             }
         ],
@@ -405,31 +395,26 @@ const aiProviders = {
             { 
                 value: 'GLM-4.5V', 
                 label: 'GLM-4.5V', 
-                apiName: 'GLM-4.5V',
                 description: '旗舰模型, 效果最强'
             },
             { 
                 value: 'GLM-4V-Plus-0111', 
                 label: 'GLM-4V-Plus-0111', 
-                apiName: 'GLM-4V-Plus-0111',
                 description: '专业级, 理解精准'
             },
             { 
                 value: 'GLM-4.1V-Thinking-FlashX', 
                 label: 'GLM-4.1V-Thinking-FlashX', 
-                apiName: 'GLM-4.1V-Thinking-FlashX',
                 description: '高性价比, 均衡全面'
             },
             { 
                 value: 'GLM-4.1V-Thinking-Flash', 
                 label: 'GLM-4.1V-Thinking-Flash', 
-                apiName: 'GLM-4.1V-Thinking-Flash',
                 description: '免费, 支持推理'
             },
             { 
                 value: 'GLM-4V-Flash', 
                 label: 'GLM-4V-Flash', 
-                apiName: 'GLM-4V-Flash',
                 description: '免费, 基础快速'
             }
         ],
@@ -444,33 +429,22 @@ const aiProviders = {
             { 
                 value: 'gemini-2.5-pro', 
                 label: 'Gemini 2.5 Pro', 
-                apiName: 'gemini-2.5-pro',
                 description: '专业级, 高质量'
             },
             { 
                 value: 'gemini-2.5-flash', 
                 label: 'Gemini 2.5 Flash', 
-                apiName: 'gemini-2.5-flash',
                 description: '推荐, 平衡高效'
             },
             { 
                 value: 'gemini-2.5-flash-lite', 
                 label: 'Gemini 2.5 Flash-Lite', 
-                apiName: 'gemini-2.5-flash-lite',
                 description: '经济型, 高速'
             }
         ],
         authHeader: 'X-Goog-Api-Key',
         authFormat: '{apiKey}',
         requestFormat: 'google'
-    },
-    custom: {
-        name: '自定义服务',
-        baseUrl: '',
-        models: [],
-        authHeader: 'Authorization',
-        authFormat: 'Bearer {apiKey}',
-        requestFormat: 'openai'
     }
 };
 

@@ -590,6 +590,11 @@ function loadConfigToUI() {
     if (skipProcessed) {
         skipProcessed.checked = pluginState.settings.skipProcessedImages !== false;
     }
+    
+    // 更新测试按钮状态
+    if (typeof checkTestConnEnabled === 'function') {
+        checkTestConnEnabled();
+    }
 }
 
 // 处理服务商变更
@@ -619,11 +624,14 @@ function handleProviderChange() {
         const option = document.createElement('option');
         option.value = model.value;
         option.textContent = model.label;
-        if (model.description) {
-            option.title = model.description;
-        }
         modelSelect.appendChild(option);
     });
+    
+    // 添加"更多模型"选项
+    const moreOption = document.createElement('option');
+    moreOption.value = '__custom__';
+    moreOption.textContent = '其他模型...';
+    modelSelect.appendChild(moreOption);
     
     // 设置当前模型
     if (pluginConfig.model) {
@@ -634,7 +642,67 @@ function handleProviderChange() {
     if (apiKeyInput) {
         apiKeyInput.value = '';
     }
+    
+    // 隐藏自定义模型输入框
+    const customModelInput = document.getElementById('customModelInput');
+    if (customModelInput) {
+        customModelInput.style.display = 'none';
+    }
+    
+    // 更新测试按钮状态
+    checkTestConnEnabled();
 }
+
+// 处理模型选择变更
+function handleModelChange() {
+    const modelSelect = document.getElementById('model');
+    const customModelInput = document.getElementById('customModelInput');
+    
+    if (!modelSelect || !customModelInput) return;
+    
+    if (modelSelect.value === '__custom__') {
+        customModelInput.style.display = 'block';
+        document.getElementById('customModel')?.focus();
+    } else {
+        customModelInput.style.display = 'none';
+    }
+}
+
+window.handleModelChange = handleModelChange;
+
+// 检查是否可以测试连接
+function checkTestConnEnabled() {
+    const apiKey = document.getElementById('apiKey')?.value?.trim();
+    const modelSelect = document.getElementById('model')?.value;
+    const customModel = document.getElementById('customModel')?.value?.trim();
+    const btn = document.getElementById('testConnBtn');
+    
+    if (!btn) return;
+    
+    const hasModel = modelSelect === '__custom__' ? !!customModel : !!modelSelect;
+    const enabled = !!(apiKey && hasModel);
+    btn.disabled = !enabled;
+    btn.title = enabled ? '点击测试API连接' : '请先填写API Key和选择模型';
+}
+
+window.checkTestConnEnabled = checkTestConnEnabled;
+
+// 切换API Key显示/隐藏
+function toggleApiKeyVisibility() {
+    const input = document.getElementById('apiKey');
+    const icon = document.getElementById('eyeIcon');
+    if (!input) return;
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+    } else {
+        input.type = 'password';
+        icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+    }
+}
+
+window.toggleApiKeyVisibility = toggleApiKeyVisibility;
 
 // 保存设置
 function saveSettings() {
@@ -648,7 +716,8 @@ function saveSettings() {
     // 保存服务商配置
     const provider = document.getElementById('provider')?.value;
     const apiKey = document.getElementById('apiKey')?.value;
-    const model = document.getElementById('model')?.value;
+    const modelSelect = document.getElementById('model')?.value;
+    const model = modelSelect === '__custom__' ? (document.getElementById('customModel')?.value || '') : modelSelect;
     const maxTokens = parseInt(document.getElementById('maxTokens')?.value || '200');
     
     if (provider) {

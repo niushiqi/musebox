@@ -308,17 +308,28 @@
                     <div class="form-group">
                         <label class="form-label">API Key</label>
                         <p style="font-size: 12px; color: #94a3b8; margin: 0 0 8px 0; line-height: 1.4;">访问大模型服务的重要凭证。在服务商网站上，选择使用API接入，然后创建API key，复制粘贴到此处</p>
-                        <input type="password" class="form-input" id="apiKey" placeholder="请输入 API Key">
+                        <div class="input-with-icon">
+                            <input type="password" class="form-input" id="apiKey" placeholder="请输入 API Key" oninput="checkTestConnEnabled()">
+                            <button class="input-icon-btn" onclick="toggleApiKeyVisibility()" title="显示/隐藏">
+                                <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">模型</label>
-                        <select class="form-input" id="model">
+                        <select class="form-input" id="model" onchange="handleModelChange(); checkTestConnEnabled()">
                             <!-- 动态填充 -->
                         </select>
+                        <div id="customModelInput" style="display: none; margin-top: 8px;">
+                            <input type="text" class="form-input" id="customModel" placeholder="请输入模型ID" oninput="checkTestConnEnabled()">
+                        </div>
                     </div>
 
-                    <button class="btn btn-secondary" onclick="testAPIConnection()">测试连接</button>
+                    <button class="btn btn-secondary" id="testConnBtn" onclick="testAPIConnection()" disabled>测试连接</button>
                 </div>
 
                 <!-- 处理偏好 -->
