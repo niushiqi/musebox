@@ -337,6 +337,7 @@ const pluginConfig = {
     provider: 'volcano',
     apiKey: '',
     model: '',
+    apiConnected: false,
     maxTokens: 200,
     autoAnnotation: false,
     customModels: {},
@@ -554,6 +555,7 @@ function checkAPIConfiguration() {
             pluginConfig.provider = config.provider || 'volcano';
             pluginConfig.apiKey = config.apiKey || '';
             pluginConfig.model = config.model || '';
+            pluginConfig.apiConnected = config.apiConnected || false;
             pluginConfig.maxTokens = config.maxTokens || 200;
             pluginConfig.customModels = config.customModels || {};
             
@@ -2226,6 +2228,7 @@ function saveConfiguration() {
             provider: selectedProvider,
             apiKey: pluginConfig.apiKey,
             model: pluginConfig.model,
+            apiConnected: pluginConfig.apiConnected || false,
             maxTokens: pluginConfig.maxTokens,
             autoAnnotation: pluginState.settings.autoAnnotation,
             manualAnnotation: pluginState.settings.manualAnnotation,
@@ -2477,6 +2480,8 @@ async function testAPIConnection() {
         
         // 更新API配置状态
         pluginState.settings.apiConfigured = true;
+        pluginConfig.apiConnected = true;
+        saveConfiguration();
         
         // 更新UI状态，隐藏API配置警告
         if (typeof checkAPIConfigurationUI === 'function') {

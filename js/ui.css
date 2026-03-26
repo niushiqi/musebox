@@ -1314,3 +1314,19 @@ body {
 .input-icon-btn:hover {
     color: #3b82f6;
 }
+
+/* 测试连接行 */
+.test-conn-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.conn-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    color: #10b981;
+    font-weight: 500;
+}

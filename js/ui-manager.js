@@ -565,7 +565,8 @@ function loadConfigToUI() {
             providerSelect.appendChild(option);
         });
         providerSelect.value = pluginConfig.provider;
-        handleProviderChange();
+        // 初始化时只填充模型列表，不清空已有配置
+        handleProviderChange(true);
     }
     
     // 加载 API Key
@@ -595,10 +596,18 @@ function loadConfigToUI() {
     if (typeof checkTestConnEnabled === 'function') {
         checkTestConnEnabled();
     }
+    
+    // 如果已验证连接成功，显示已连接标识
+    if (pluginConfig.apiConnected) {
+        const connStatus = document.getElementById('connStatus');
+        if (connStatus) {
+            connStatus.style.display = 'inline-flex';
+        }
+    }
 }
 
-// 处理服务商变更
-function handleProviderChange() {
+// 处理服务商变更（isInit=true时为初始化加载，不清空配置）
+function handleProviderChange(isInit) {
     if (!window.eagleAutoAnnotation) return;
     
     const { pluginConfig, aiProviders } = window.eagleAutoAnnotation;
@@ -613,10 +622,16 @@ function handleProviderChange() {
     
     if (!providerInfo) return;
     
-    // 切换服务商时清空API Key和模型
     pluginConfig.provider = provider;
-    pluginConfig.apiKey = '';
-    pluginConfig.model = '';
+    
+    // 用户手动切换时清空
+    if (!isInit) {
+        pluginConfig.apiKey = '';
+        pluginConfig.model = '';
+        if (apiKeyInput) {
+            apiKeyInput.value = '';
+        }
+    }
     
     // 更新模型列表
     modelSelect.innerHTML = '';
@@ -635,18 +650,35 @@ function handleProviderChange() {
     
     // 设置当前模型
     if (pluginConfig.model) {
-        modelSelect.value = pluginConfig.model;
+        // 检查模型是否在列表中
+        const modelExists = providerInfo.models.some(m => m.value === pluginConfig.model);
+        if (modelExists) {
+            modelSelect.value = pluginConfig.model;
+        } else {
+            // 自定义模型，选中"其他模型"并显示输入框
+            modelSelect.value = '__custom__';
+            const customModelInput = document.getElementById('customModelInput');
+            const customModelField = document.getElementById('customModel');
+            if (customModelInput) {
+                customModelInput.style.display = 'block';
+            }
+            if (customModelField) {
+                customModelField.value = pluginConfig.model;
+            }
+        }
     }
     
     // 清空 API Key 输入框
-    if (apiKeyInput) {
+    if (!isInit && apiKeyInput) {
         apiKeyInput.value = '';
     }
     
-    // 隐藏自定义模型输入框
-    const customModelInput = document.getElementById('customModelInput');
-    if (customModelInput) {
-        customModelInput.style.display = 'none';
+    // 隐藏自定义模型输入框（仅非自定义模型时）
+    if (!pluginConfig.model || providerInfo.models.some(m => m.value === pluginConfig.model)) {
+        const customModelInput = document.getElementById('customModelInput');
+        if (customModelInput && !isInit) {
+            customModelInput.style.display = 'none';
+        }
     }
     
     // 更新测试按钮状态
@@ -685,7 +717,20 @@ function checkTestConnEnabled() {
     btn.title = enabled ? '点击测试API连接' : '请先填写API Key和选择模型';
 }
 
+// 用户修改配置时重置已连接状态
+function onConfigInputChanged() {
+    checkTestConnEnabled();
+    const connStatus = document.getElementById('connStatus');
+    if (connStatus) {
+        connStatus.style.display = 'none';
+    }
+    if (window.eagleAutoAnnotation) {
+        window.eagleAutoAnnotation.pluginConfig.apiConnected = false;
+    }
+}
+
 window.checkTestConnEnabled = checkTestConnEnabled;
+window.onConfigInputChanged = onConfigInputChanged;
 
 // 切换API Key显示/隐藏
 function toggleApiKeyVisibility() {
@@ -768,12 +813,15 @@ async function testAPIConnection() {
     saveSettings();
     
     try {
-        showNotification('正在测试连接...', 'info');
         await window.eagleAutoAnnotation.testAPIConnection();
-        showNotification('API 连接测试成功!', 'success');
+        
+        // 显示已连接标识
+        const connStatus = document.getElementById('connStatus');
+        if (connStatus) {
+            connStatus.style.display = 'inline-flex';
+        }
     } catch (error) {
         console.error('API 测试失败:', error);
-        showNotification('API 连接测试失败: ' + error.message, 'error');
     }
 }
 
