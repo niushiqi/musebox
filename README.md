@@ -1,4 +1,4 @@
-# 批量重命名注释打标 - MuseAI
+# [eagle插件] 批量重命名注释打标 - MuseAI
 
 > 使用 AI 大模型为 Eagle 中的图片批量重命名、注释、打标签
 。  
@@ -10,7 +10,3 @@
 
 ## ✨ 问题反馈
 <img src="https://free.boltp.com/2026/03/27/69c641a84c24e.webp" width="200" height="350">
-
-
-## 🚀 使用教程
-
