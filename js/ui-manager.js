@@ -457,8 +457,29 @@ async function processImageWithAI(image, options) {
         }
     }
     
-    // TODO: 实现标签和重命名功能
-    // 这些功能需要在 plugin.js 中添加相应的函数
+    // 添加标签
+    if (options.tag) {
+        await generateAndApplyTags(image);
+    }
+}
+
+// 生成并应用标签
+async function generateAndApplyTags(image) {
+    const { generateImageTags } = window.eagleAutoAnnotation;
+    
+    const tags = await generateImageTags(image);
+    if (!tags || tags.length === 0) return;
+    
+    // 合并已有标签
+    const existingTags = image.tags || [];
+    const mergedTags = Array.from(new Set([...existingTags, ...tags]));
+    
+    image.tags = mergedTags;
+    
+    if (typeof image.save === 'function') {
+        await image.save();
+        console.log('标签已保存:', mergedTags);
+    }
 }
 
 // 更新图片状态

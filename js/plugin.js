@@ -1883,6 +1883,136 @@ async function getImageBase64(imageData) {
     });
 }
 
+// 生成图片标签
+async function generateImageTags(imageData) {
+    try {
+        console.log('开始生成图片标签:', imageData.name);
+        
+        const currentProvider = pluginConfig.provider;
+        const apiKey = pluginConfig.apiKey;
+        if (!apiKey) {
+            throw new Error('API密钥未配置');
+        }
+        
+        // 获取标签模板
+        const activeTemplate = getActiveTemplate('tag');
+        if (!activeTemplate || !activeTemplate.prompt) {
+            throw new Error('请激活标签模板');
+        }
+        
+        // 获取Eagle中所有已有标签
+        let availableTags = [];
+        try {
+            if (typeof eagle.tag !== 'undefined' && typeof eagle.tag.get === 'function') {
+                const tags = await eagle.tag.get();
+                availableTags = tags.map(t => typeof t === 'string' ? t : t.name).filter(Boolean);
+            } else if (typeof eagle.item !== 'undefined' && typeof eagle.item.getAll === 'function') {
+                const allItems = await eagle.item.getAll();
+                const tagSet = new Set();
+                allItems.forEach(item => {
+                    if (item.tags && Array.isArray(item.tags)) {
+                        item.tags.forEach(tag => tagSet.add(tag));
+                    }
+                });
+                availableTags = Array.from(tagSet);
+            }
+        } catch (e) {
+            console.warn('获取Eagle标签失败，将使用空标签列表:', e);
+        }
+        
+        // 替换模板中的宏
+        const prompt = activeTemplate.prompt.replace('{availableTags}', availableTags.join(', ') || '暂无可用标签');
+        
+        // 获取图片Base64
+        const imageBase64 = await getImageBase64(imageData);
+        
+        const provider = aiProviders[currentProvider];
+        if (!provider) {
+            throw new Error(`不支持的服务商: ${currentProvider}`);
+        }
+        
+        const model = pluginConfig.model;
+        const requestData = buildAPIRequestWithPrompt(provider, imageBase64, model, prompt);
+        const headers = buildAPIHeaders(provider);
+        const apiUrl = getAPIUrl(provider);
+        
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(requestData)
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`API请求失败: ${response.status} - ${errorText}`);
+        }
+        
+        const result = await response.json();
+        const parseResult = parseAPIResponse(provider, result);
+        const tagsText = parseResult.content;
+        
+        if (parseResult.tokenUsage) {
+            updateTokenUsage(parseResult.tokenUsage, provider);
+        }
+        
+        // 解析返回的标签（逗号分隔）
+        const tags = tagsText.split(/[,，]/).map(t => t.trim()).filter(Boolean);
+        
+        console.log('生成的标签:', tags);
+        return tags;
+        
+    } catch (error) {
+        console.error('生成标签时出错:', error);
+        throw error;
+    }
+}
+
+// 构建带自定义prompt的API请求
+function buildAPIRequestWithPrompt(provider, imageBase64, model, prompt) {
+    let mimeType = 'image/jpeg';
+    
+    switch (provider.requestFormat) {
+        case 'openai':
+            return {
+                model: model,
+                messages: [{
+                    role: 'user',
+                    content: [
+                        { type: 'text', text: prompt },
+                        { type: 'image_url', image_url: { url: `data:${mimeType};base64,${imageBase64}` } }
+                    ]
+                }],
+                max_tokens: pluginConfig.maxTokens
+            };
+        case 'alibaba':
+            return {
+                model: model,
+                input: {
+                    messages: [{
+                        role: 'user',
+                        content: [
+                            { text: prompt },
+                            { image: `data:${mimeType};base64,${imageBase64}` }
+                        ]
+                    }]
+                },
+                parameters: { max_tokens: pluginConfig.maxTokens, temperature: 0.7 }
+            };
+        case 'google':
+            return {
+                contents: [{
+                    parts: [
+                        { text: prompt },
+                        { inline_data: { mime_type: mimeType, data: imageBase64 } }
+                    ]
+                }],
+                generationConfig: { maxOutputTokens: pluginConfig.maxTokens }
+            };
+        default:
+            throw new Error(`不支持的请求格式: ${provider.requestFormat}`);
+    }
+}
+
 // 将注释添加到图片
 async function addAnnotationToImage(imageData, annotation) {
     try {
@@ -2542,14 +2672,15 @@ window.eagleAutoAnnotation = {
     reinitializeAutoAnnotation,
     testBackgroundMode,
     getBackgroundTestHistory,
-    syncConfigurationToUI,  // v1.8.1 新增
-    resetToDefaultConfig,   // v1.9.0 新增一键还原功能
-    updateSelectedImagesUI, // 新增：更新选中图片UI
-    buildAPIRequest,        // 导出API请求构建函数
-    buildAPIHeaders,        // 导出API请求头构建函数
-    getAPIUrl,             // 导出API URL获取函数
-    generateImageAnnotation, // 导出图片注释生成函数
-    addAnnotationToImage,   // 导出添加注释函数
+    syncConfigurationToUI,
+    resetToDefaultConfig,
+    updateSelectedImagesUI,
+    buildAPIRequest,
+    buildAPIHeaders,
+    getAPIUrl,
+    generateImageAnnotation,
+    addAnnotationToImage,
+    generateImageTags,      // 新增：标签生成函数
     pluginConfig,
     pluginState,
     aiProviders,

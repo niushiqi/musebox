@@ -99,7 +99,7 @@
                     </div>
 
                     <!-- 标签控制 -->
-                    <div class="control-row disabled" data-feature="tag" onclick="showComingSoonNotification('标签生成')">
+                    <div class="control-row" data-feature="tag">
                         <div class="control-icon">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
@@ -107,21 +107,20 @@
                             </svg>
                         </div>
                         <div class="control-info">
-                            <div class="control-title">添加标签 <span class="coming-soon-badge">开发中</span></div>
-                            <!-- <div class="control-desc">自动生成相关标签</div> -->
+                            <div class="control-title">添加标签</div>
                         </div>
-                        <div class="control-actions disabled">
-                            <select class="form-select" id="tag-template" disabled>
-                                <option value="">下个版本开放</option>
+                        <div class="control-actions">
+                            <select class="form-select" id="tag-template" onchange="updateSelectedTemplate('tag')">
+                                <!-- 模板选项将动态加载 -->
                             </select>
-                            <button class="btn-icon" title="开发中" disabled>
+                            <button class="btn-icon" title="预览模板" onclick="previewTemplate('tag')">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                     <circle cx="12" cy="12" r="3"></circle>
                                 </svg>
                             </button>
-                            <label class="toggle disabled">
-                                <input type="checkbox" id="enable-tag" disabled>
+                            <label class="toggle">
+                                <input type="checkbox" id="enable-tag">
                                 <span class="toggle-slider"></span>
                             </label>
                         </div>
