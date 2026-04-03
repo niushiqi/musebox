@@ -149,7 +149,7 @@ function updateStartButton() {
         startBtn.disabled = false;
         startBtn.title = '';
         if (enableAnnotation && enableTag) {
-            startBtn.innerHTML = `${svgIcon} 开始 添加注释与添加标签`;
+            startBtn.innerHTML = `${svgIcon} 开始 添加注释与标签`;
         } else if (enableAnnotation) {
             startBtn.innerHTML = `${svgIcon} 开始 添加注释`;
         } else {
@@ -999,12 +999,12 @@ function updateStatusIcon() {
     const images = uiState.images;
     
     if (images.length === 0) {
-        // 显示默认图标
+        // 显示未选择图片的提示icon
         container.innerHTML = `
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                <polyline points="21 15 16 10 5 21"></polyline>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.5">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke-dasharray="4 2"></rect>
+                <line x1="12" y1="8" x2="12" y2="16"></line>
+                <line x1="8" y1="12" x2="16" y2="12"></line>
             </svg>
         `;
         container.className = 'status-icon';
