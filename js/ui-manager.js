@@ -123,10 +123,42 @@ function setupFeatureToggles() {
                 if (row) {
                     row.classList.toggle('active', e.target.checked);
                 }
+                updateStartButton();
             });
         }
     });
+    
+    // 初始化按钮状态
+    setTimeout(() => updateStartButton(), 100);
 }
+
+// 更新开始按钮状态和文案
+function updateStartButton() {
+    const enableAnnotation = document.getElementById('enable-annotation')?.checked;
+    const enableTag = document.getElementById('enable-tag')?.checked;
+    const startBtn = document.getElementById('startBtn');
+    if (!startBtn) return;
+    
+    const svgIcon = `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
+    
+    if (!enableAnnotation && !enableTag) {
+        startBtn.disabled = true;
+        startBtn.title = '请至少选择一种处理方式';
+        startBtn.innerHTML = `${svgIcon} 开始处理`;
+    } else {
+        startBtn.disabled = false;
+        startBtn.title = '';
+        if (enableAnnotation && enableTag) {
+            startBtn.innerHTML = `${svgIcon} 开始 添加注释与添加标签`;
+        } else if (enableAnnotation) {
+            startBtn.innerHTML = `${svgIcon} 开始 添加注释`;
+        } else {
+            startBtn.innerHTML = `${svgIcon} 开始 添加标签`;
+        }
+    }
+}
+
+window.updateStartButton = updateStartButton;
 
 // 分页控制
 function setupPagination() {
@@ -339,8 +371,7 @@ async function handleStartProcessing() {
     if (!enableAnnotation && !enableTag && !enableRename) {
         showNotification('请至少启用一个功能', 'warning');
         return;
-    }
-    
+    }    
     // 检查是否有选中的图片
     if (uiState.images.length === 0) {
         showNotification('请先在 Eagle 中选择图片', 'warning');
@@ -417,20 +448,11 @@ async function handleStartProcessing() {
         uiState.processing = false;
         hideProgress();
         
-        // 恢复按钮状态
-        const startBtn = document.getElementById('startBtn');
-        if (startBtn) {
-            startBtn.disabled = false;
-            startBtn.innerHTML = `
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                </svg>
-                开始处理
-            `;
-        }
-        
         // 刷新图片列表
         await refreshImageList();
+        
+        // 恢复按钮文案
+        updateStartButton();
     }
 }
 
