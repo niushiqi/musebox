@@ -373,7 +373,10 @@
 
                 <!-- Token 统计 -->
                 <div class="settings-section">
-                    <h3 class="section-title">使用统计</h3>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">
+                        <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #1e293b;">使用统计</h3>
+                        <button style="background: none; border: none; color: #3b82f6; font-size: 12px; cursor: pointer; padding: 0;" onclick="resetTokenStats()">重置</button>
+                    </div>
                     <div class="stats-grid">
                         <div class="stat-card">
                             <div class="stat-value" id="total-tokens">0</div>

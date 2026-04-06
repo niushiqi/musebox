@@ -1398,15 +1398,8 @@ function buildAPIRequest(provider, imageBase64, model) {
     
     const prompt = activeTemplate.prompt;
     
-    // 根据图片格式确定MIME类型
-    let mimeType = 'image/jpeg';
-    if (imageBase64.startsWith('/9j/') || imageBase64.startsWith('iVBOR')) {
-        mimeType = 'image/jpeg';
-    } else if (imageBase64.startsWith('iVBOR')) {
-        mimeType = 'image/png';
-    } else if (imageBase64.startsWith('UklGR')) {
-        mimeType = 'image/webp';
-    }
+    // 图片已压缩为webp格式
+    const mimeType = 'image/webp';
     
     console.log('图片MIME类型:', mimeType);
     console.log('使用模型:', model);
@@ -1432,6 +1425,9 @@ function buildAPIRequest(provider, imageBase64, model) {
                         ]
                     }
                 ],
+                thinking: {
+                    "type": "disabled"
+                },
                 max_tokens: pluginConfig.maxTokens
             };
             
@@ -1747,6 +1743,43 @@ function loadTokenUsageStats() {
     }
 }
 
+// 重置token统计
+function resetTokenStats() {
+    // 自定义确认弹窗
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:99999;';
+    modal.innerHTML = `
+        <div style="background:white;border-radius:10px;padding:24px;width:260px;box-shadow:0 8px 24px rgba(0,0,0,0.15);">
+            <div style="font-size:15px;font-weight:600;color:#1e293b;margin-bottom:8px;">重置使用统计</div>
+            <div style="font-size:13px;color:#64748b;margin-bottom:20px;">确定要清空所有统计数据吗？</div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;">
+                <button id="cancelReset" style="padding:6px 14px;border:1px solid #e2e8f0;background:white;border-radius:6px;cursor:pointer;font-size:13px;color:#475569;">取消</button>
+                <button id="confirmReset" style="padding:6px 14px;border:none;background:#3b82f6;color:white;border-radius:6px;cursor:pointer;font-size:13px;">确定</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    
+    document.getElementById('cancelReset').onclick = () => modal.remove();
+    document.getElementById('confirmReset').onclick = () => {
+        modal.remove();
+        pluginState.tokenUsage.totalTokens = 0;
+        pluginState.tokenUsage.totalInputTokens = 0;
+        pluginState.tokenUsage.totalOutputTokens = 0;
+        pluginState.tokenUsage.totalCost = 0;
+        pluginState.tokenUsage.requests = 0;
+        pluginState.tokenUsage.lastRequest = null;
+        localStorage.removeItem('eagleAutoAnnotationTokenStats');
+        updateTokenUsageUI();
+        if (window.showNotification) {
+            window.showNotification('使用统计已重置', 'success');
+        }
+    };
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+}
+
+window.resetTokenStats = resetTokenStats;
+
 // 更新UI中token统计显示
 function updateTokenUsageUI() {
     // 更新统计信息
@@ -1853,13 +1886,44 @@ async function getImageBase64(imageData) {
             const fileName = imageData.name + '.' + imageData.ext;
             const file = new File([blob], fileName, { type: blob.type });
             
-            // 转换为Base64
+            // 转换为Base64，先压缩到最大512px并转为webp
             const reader = new FileReader();
             reader.onload = function() {
                 try {
-                    const base64String = reader.result.split(',')[1];
-                    console.log('Base64编码完成，长度:', base64String.length);
-                    resolve(base64String);
+                    const img = new Image();
+                    img.onload = function() {
+                        // 计算压缩后的尺寸
+                        const maxSize = 512;
+                        let w = img.width;
+                        let h = img.height;
+                        if (w > maxSize || h > maxSize) {
+                            if (w > h) {
+                                h = Math.round(h * maxSize / w);
+                                w = maxSize;
+                            } else {
+                                w = Math.round(w * maxSize / h);
+                                h = maxSize;
+                            }
+                        }
+                        
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+                        
+                        // 转为webp格式，质量0.85
+                        const dataUrl = canvas.toDataURL('image/webp', 0.85);
+                        const base64String = dataUrl.split(',')[1];
+                        console.log(`图片压缩完成: ${img.width}x${img.height} -> ${w}x${h}, Base64长度: ${base64String.length}`);
+                        resolve(base64String);
+                    };
+                    img.onerror = function() {
+                        // 图片加载失败则直接用原始base64
+                        const base64String = reader.result.split(',')[1];
+                        resolve(base64String);
+                    };
+                    img.src = reader.result;
                 } catch (parseError) {
                     console.error('Base64解析失败:', parseError);
                     reject(new Error('Base64编码解析失败'));
@@ -1956,7 +2020,7 @@ async function generateImageTags(imageData) {
         }
         
         // 解析返回的标签（逗号分隔）
-        const tags = tagsText.split(/[,，]/).map(t => t.trim()).filter(Boolean);
+        const tags = tagsText.split(/[,，、；;|\n\r\/\\#\s]+/).map(t => t.trim()).filter(Boolean);
         
         console.log('生成的标签:', tags);
         return tags;
@@ -1969,7 +2033,7 @@ async function generateImageTags(imageData) {
 
 // 构建带自定义prompt的API请求
 function buildAPIRequestWithPrompt(provider, imageBase64, model, prompt) {
-    let mimeType = 'image/jpeg';
+    const mimeType = 'image/webp';
     
     switch (provider.requestFormat) {
         case 'openai':
@@ -1982,6 +2046,9 @@ function buildAPIRequestWithPrompt(provider, imageBase64, model, prompt) {
                         { type: 'image_url', image_url: { url: `data:${mimeType};base64,${imageBase64}` } }
                     ]
                 }],
+                thinking: {
+                    "type": "disabled"
+                },
                 max_tokens: pluginConfig.maxTokens
             };
         case 'alibaba':
@@ -2535,6 +2602,9 @@ async function testAPIConnection() {
                         content: '你好，这是一个测试消息，请简单回复。'
                     }
                 ],
+                thinking: {
+                    "type": "disabled"
+                },
                 max_tokens: 20
             };
         }
@@ -3136,10 +3206,28 @@ function renderTemplateList() {
 function selectTemplate(templateId) {
     // 检查是否有未保存的更改
     if (window.templateUIState?.hasUnsavedChanges) {
-        if (!confirm('您有未保存的更改，确定要切换模板吗？')) {
-            return;
-        }
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:99999;';
+        modal.innerHTML = `
+            <div style="background:white;border-radius:10px;padding:24px;width:260px;box-shadow:0 8px 24px rgba(0,0,0,0.15);">
+                <div style="font-size:15px;font-weight:600;color:#1e293b;margin-bottom:8px;">未保存的更改</div>
+                <div style="font-size:13px;color:#64748b;margin-bottom:20px;">您有未保存的更改，确定要切换模板吗？</div>
+                <div style="display:flex;gap:8px;justify-content:flex-end;">
+                    <button id="cancelSwitch" style="padding:6px 14px;border:1px solid #e2e8f0;background:white;border-radius:6px;cursor:pointer;font-size:13px;color:#475569;">取消</button>
+                    <button id="confirmSwitch" style="padding:6px 14px;border:none;background:#3b82f6;color:white;border-radius:6px;cursor:pointer;font-size:13px;">确定</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        document.getElementById('cancelSwitch').onclick = () => modal.remove();
+        document.getElementById('confirmSwitch').onclick = () => { modal.remove(); doSelectTemplate(templateId); };
+        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+        return;
     }
+    doSelectTemplate(templateId);
+}
+
+function doSelectTemplate(templateId) {
     
     if (!window.templateUIState) {
         window.templateUIState = {
@@ -3412,28 +3500,34 @@ function deleteTemplateConfirm(templateId) {
     const template = window.eagleAutoAnnotation.pluginConfig.templates.find(t => t.id === templateId);
     if (!template) return;
     
-    if (confirm(`确定要删除模板"${template.name}"吗？`)) {
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:99999;';
+    modal.innerHTML = `
+        <div style="background:white;border-radius:10px;padding:24px;width:260px;box-shadow:0 8px 24px rgba(0,0,0,0.15);">
+            <div style="font-size:15px;font-weight:600;color:#1e293b;margin-bottom:8px;">删除模板</div>
+            <div style="font-size:13px;color:#64748b;margin-bottom:20px;">确定要删除模板「${template.name}」吗？</div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;">
+                <button id="cancelDel" style="padding:6px 14px;border:1px solid #e2e8f0;background:white;border-radius:6px;cursor:pointer;font-size:13px;color:#475569;">取消</button>
+                <button id="confirmDel" style="padding:6px 14px;border:none;background:#ef4444;color:white;border-radius:6px;cursor:pointer;font-size:13px;">删除</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    
+    document.getElementById('cancelDel').onclick = () => modal.remove();
+    document.getElementById('confirmDel').onclick = () => {
+        modal.remove();
         try {
             window.eagleAutoAnnotation.deleteTemplate(templateId);
             renderTemplateList();
             clearTemplateEditor();
-            
-            // 更新工作台的模板选择器
-            if (window.updateTemplateSelectors) {
-                window.updateTemplateSelectors();
-            } else if (typeof updateTemplateSelectors === 'function') {
-                updateTemplateSelectors();
-            }
-            
-            if (window.showNotification) {
-                window.showNotification('模板已删除', 'success');
-            }
+            if (window.updateTemplateSelectors) window.updateTemplateSelectors();
+            if (window.showNotification) window.showNotification('模板已删除', 'success');
         } catch (error) {
-            if (window.showNotification) {
-                window.showNotification('删除失败: ' + error.message, 'error');
-            }
+            if (window.showNotification) window.showNotification('删除失败: ' + error.message, 'error');
         }
-    }
+    };
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
 }
 
 // 初始化模板管理UI
@@ -3514,4 +3608,5 @@ function navigateToUsageStats() {
 }
 
 // 立即将函数添加到全局作用域
+window.resetTokenStats = resetTokenStats;
 window.navigateToUsageStats = navigateToUsageStats;

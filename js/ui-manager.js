@@ -852,12 +852,28 @@ function saveSettings() {
 function resetSettings() {
     if (!window.eagleAutoAnnotation) return;
     
-    if (confirm('确定要重置所有设置吗?这将清除所有配置和统计数据。')) {
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:99999;';
+    modal.innerHTML = `
+        <div style="background:white;border-radius:10px;padding:24px;width:260px;box-shadow:0 8px 24px rgba(0,0,0,0.15);">
+            <div style="font-size:15px;font-weight:600;color:#1e293b;margin-bottom:8px;">重置设置</div>
+            <div style="font-size:13px;color:#64748b;margin-bottom:20px;">确定要重置所有设置吗？这将清除所有配置和统计数据。</div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;">
+                <button id="cancelRst" style="padding:6px 14px;border:1px solid #e2e8f0;background:white;border-radius:6px;cursor:pointer;font-size:13px;color:#475569;">取消</button>
+                <button id="confirmRst" style="padding:6px 14px;border:none;background:#ef4444;color:white;border-radius:6px;cursor:pointer;font-size:13px;">确定</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    document.getElementById('cancelRst').onclick = () => modal.remove();
+    document.getElementById('confirmRst').onclick = () => {
+        modal.remove();
         window.eagleAutoAnnotation.resetToDefaultConfig();
         loadConfigToUI();
         window.eagleAutoAnnotation.updateTokenUsageUI();
         showNotification('设置已重置', 'success');
-    }
+    };
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
 }
 
 // 测试 API 连接
