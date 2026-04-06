@@ -160,6 +160,21 @@ function updateStartButton() {
 
 window.updateStartButton = updateStartButton;
 
+// 切换窗口置顶
+let isPinned = false;
+async function toggleAlwaysOnTop() {
+    isPinned = !isPinned;
+    await eagle.window.setAlwaysOnTop(isPinned);
+    
+    const btn = document.getElementById('pinBtn');
+    if (btn) {
+        btn.classList.toggle('pinned', isPinned);
+        btn.title = isPinned ? '取消置顶' : '置顶窗口';
+    }
+}
+
+window.toggleAlwaysOnTop = toggleAlwaysOnTop;
+
 // 分页控制
 function setupPagination() {
     const prevBtn = document.getElementById('prevPage');
