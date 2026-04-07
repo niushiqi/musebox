@@ -1365,3 +1365,153 @@ body {
     color: #3b82f6;
     background: rgba(59, 130, 246, 0.1);
 }
+
+/* 消耗明细 */
+.detail-date-group {
+    font-size: 12px;
+    font-weight: 600;
+    color: #94a3b8;
+    padding: 12px 0 6px 0;
+    letter-spacing: 0.5px;
+}
+
+.detail-date-group:first-child {
+    padding-top: 0;
+}
+
+.detail-item {
+    display: flex;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    background: #fafafa;
+    border: 1px solid #f1f5f9;
+    margin-bottom: 6px;
+    transition: all 0.2s;
+}
+
+.detail-item:hover {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+}
+
+.detail-thumb {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #e2e8f0;
+}
+
+.detail-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.detail-thumb-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #e2e8f0, #f1f5f9);
+}
+
+.detail-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+}
+
+.detail-row1 {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+}
+
+.detail-row2 {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    overflow: hidden;
+    padding-left: 6px;
+}
+
+.detail-task {
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+.detail-duration {
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    font-weight: 500;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.detail-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: #1e293b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+}
+
+.detail-time {
+    font-size: 10px;
+    color: #94a3b8;
+    flex-shrink: 0;
+}
+
+.detail-model {
+    font-size: 10px;
+    color: #94a3b8;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+}
+
+.detail-dot {
+    color: #cbd5e1;
+    flex-shrink: 0;
+}
+
+.detail-tokens-right {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.detail-token-item {
+    font-size: 11px;
+    color: #3b82f6;
+    background: #f1f5f9;
+    padding: 1px 6px;
+    border-radius: 4px;
+}
+
+.detail-token-item.total {
+    background: #eff6ff;
+    color: #3b82f6;
+}
+
+.detail-token-item b {
+    font-weight: 600;
+}
+
+.detail-token-item.time {
+    background: #eff6ff;
+    color: gray;
+}

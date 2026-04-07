@@ -94,9 +94,14 @@ function switchTab(tabName) {
     
     uiState.activeTab = tabName;
     
-    // 如果切换到设置页面,刷新统计数据
-    if (tabName === 'settings' && window.eagleAutoAnnotation) {
+    // 如果切换到设置或统计页面，刷新统计数据
+    if ((tabName === 'settings' || tabName === 'stats') && window.eagleAutoAnnotation) {
         window.eagleAutoAnnotation.updateTokenUsageUI();
+    }
+    
+    // 切换到统计页面时渲染明细
+    if (tabName === 'stats' && window.renderUsageDetails) {
+        window.renderUsageDetails();
     }
     
     // 如果切换到模板管理页面,初始化模板UI

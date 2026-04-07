@@ -1250,6 +1250,7 @@ async function processImageQueue() {
 
 // 生成图片注释
 async function generateImageAnnotation(imageData) {
+    const startTime = Date.now();
     try {
         console.log('开始生成图片注释:', imageData.name);
         
@@ -1376,7 +1377,12 @@ async function generateImageAnnotation(imageData) {
         
         // 更新token统计
         if (tokenUsage) {
-            updateTokenUsage(tokenUsage, provider);
+            updateTokenUsage(tokenUsage, provider, {
+                taskType: 'annotation',
+                duration: Math.round((Date.now() - startTime) / 1000),
+                imageName: imageData.ext ? `${imageData.name}.${imageData.ext}` : imageData.name,
+                imageThumbnail: imageData.thumbnailURL || imageData.fileURL || ''
+            });
         }
         
         return annotation;
@@ -1598,13 +1604,12 @@ function parseAPIResponse(provider, result) {
 }
 
 // 更新token使用统计
-function updateTokenUsage(tokenUsage, provider) {
+function updateTokenUsage(tokenUsage, provider, extraInfo) {
     if (!tokenUsage) return;
     
     const currentProvider = pluginConfig.provider;
     const providerName = aiProviders[currentProvider]?.name || '当前服务商';
     
-    // 统一处理不同服务商的token统计格式
     let totalTokens = 0;
     let inputTokens = 0;
     let outputTokens = 0;
@@ -1634,19 +1639,28 @@ function updateTokenUsage(tokenUsage, provider) {
     pluginState.tokenUsage.requests += 1;
     pluginState.tokenUsage.lastRequest = {
         provider: providerName,
-        totalTokens: totalTokens,
-        inputTokens: inputTokens,
-        outputTokens: outputTokens,
+        totalTokens,
+        inputTokens,
+        outputTokens,
         timestamp: new Date().toISOString()
     };
     
-    // 保存统计数据
+    // 记录明细
+    const detail = {
+        timestamp: new Date().toISOString(),
+        model: pluginConfig.model || providerName,
+        totalTokens,
+        inputTokens,
+        outputTokens,
+        taskType: extraInfo?.taskType || 'annotation',
+        duration: extraInfo?.duration || 0,
+        imageName: extraInfo?.imageName ? (extraInfo.imageName.includes('.') ? extraInfo.imageName : extraInfo.imageName) : '',
+        imageThumbnail: extraInfo?.imageThumbnail || ''
+    };
+    saveUsageDetail(detail);
+    
     saveTokenUsageStats();
-    
-    // 只记录到控制台，不显示弹窗
     console.log(`📊 本次调用消耗 ${totalTokens} 个token（输入: ${inputTokens}, 输出: ${outputTokens}）`);
-    
-    // 更新UI统计
     updateTokenUsageUI();
 }
 
@@ -1770,7 +1784,9 @@ function resetTokenStats() {
         pluginState.tokenUsage.requests = 0;
         pluginState.tokenUsage.lastRequest = null;
         localStorage.removeItem('eagleAutoAnnotationTokenStats');
+        localStorage.removeItem('eagleUsageDetails');
         updateTokenUsageUI();
+        if (window.renderUsageDetails) window.renderUsageDetails();
         if (window.showNotification) {
             window.showNotification('使用统计已重置', 'success');
         }
@@ -1949,6 +1965,7 @@ async function getImageBase64(imageData) {
 
 // 生成图片标签
 async function generateImageTags(imageData) {
+    const startTime = Date.now();
     try {
         console.log('开始生成图片标签:', imageData.name);
         
@@ -2016,7 +2033,12 @@ async function generateImageTags(imageData) {
         const tagsText = parseResult.content;
         
         if (parseResult.tokenUsage) {
-            updateTokenUsage(parseResult.tokenUsage, provider);
+            updateTokenUsage(parseResult.tokenUsage, provider, {
+                taskType: 'tag',
+                duration: Math.round((Date.now() - startTime) / 1000),
+                imageName: imageData.ext ? `${imageData.name}.${imageData.ext}` : imageData.name,
+                imageThumbnail: imageData.thumbnailURL || imageData.fileURL || ''
+            });
         }
         
         // 解析返回的标签（逗号分隔）
@@ -3567,46 +3589,123 @@ function showComingSoonNotification(feature) {
 window.showComingSoonNotification = showComingSoonNotification;
 // 导航到使用统计
 function navigateToUsageStats() {
-    // 切换到设置页面
     if (typeof switchTab === 'function') {
-        switchTab('settings');
+        switchTab('stats');
     } else if (window.switchTab) {
-        window.switchTab('settings');
+        window.switchTab('stats');
     }
-    
-    // 延迟一下让页面切换完成，然后滚动到使用统计区域
-    setTimeout(() => {
-        // 查找使用统计标题
-        const allH3 = document.querySelectorAll('.settings-section h3');
-        let statsSection = null;
-        
-        for (const h3 of allH3) {
-            if (h3.textContent.includes('使用统计')) {
-                statsSection = h3.closest('.settings-section');
-                break;
-            }
-        }
-        
-        if (statsSection) {
-            // 添加高亮类
-            statsSection.classList.add('highlight');
-            
-            // 滚动到该区域
-            statsSection.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'center'
-            });
-            
-            // 2秒后移除高亮类
-            setTimeout(() => {
-                statsSection.classList.remove('highlight');
-            }, 2000);
-        } else {
-            console.warn('未找到使用统计区域');
-        }
-    }, 200);
 }
 
 // 立即将函数添加到全局作用域
 window.resetTokenStats = resetTokenStats;
 window.navigateToUsageStats = navigateToUsageStats;
+
+// 保存单条明细记录
+function saveUsageDetail(detail) {
+    try {
+        const details = JSON.parse(localStorage.getItem('eagleUsageDetails') || '[]');
+        details.unshift(detail);
+        if (details.length > 500) details.splice(500);
+        localStorage.setItem('eagleUsageDetails', JSON.stringify(details));
+        if (document.getElementById('usageDetailsList')) {
+            renderUsageDetails();
+        }
+    } catch (e) {
+        console.warn('保存明细失败:', e);
+    }
+}
+
+// 清空明细
+function clearUsageDetails() {
+    localStorage.removeItem('eagleUsageDetails');
+    renderUsageDetails();
+}
+window.clearUsageDetails = clearUsageDetails;
+
+// 明细分页状态
+let detailsCurrentPage = 0;
+const DETAILS_PER_PAGE = 20;
+
+function changeDetailsPage(delta) {
+    const details = JSON.parse(localStorage.getItem('eagleUsageDetails') || '[]');
+    const totalPages = Math.ceil(details.length / DETAILS_PER_PAGE);
+    detailsCurrentPage = Math.max(0, Math.min(detailsCurrentPage + delta, totalPages - 1));
+    renderUsageDetails();
+}
+window.changeDetailsPage = changeDetailsPage;
+
+// 渲染明细列表
+function renderUsageDetails() {
+    const container = document.getElementById('usageDetailsList');
+    const pagination = document.getElementById('usageDetailsPagination');
+    if (!container) return;
+    
+    const details = JSON.parse(localStorage.getItem('eagleUsageDetails') || '[]');
+    
+    if (details.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 32px; color: #94a3b8; font-size: 13px;">暂无记录</div>';
+        if (pagination) pagination.style.display = 'none';
+        return;
+    }
+    
+    const totalPages = Math.ceil(details.length / DETAILS_PER_PAGE);
+    const start = detailsCurrentPage * DETAILS_PER_PAGE;
+    const pageDetails = details.slice(start, start + DETAILS_PER_PAGE);
+    
+    // 按日期分组（含年份）
+    const pageGroups = {};
+    pageDetails.forEach(d => {
+        const date = new Date(d.timestamp).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
+        if (!pageGroups[date]) pageGroups[date] = [];
+        pageGroups[date].push(d);
+    });
+    
+    const taskTypeMap = { annotation: '生成注释', tag: '生成标签', rename: '重命名' };
+    const taskColorMap = { annotation: '#6366f1', tag: '#10b981', rename: '#f59e0b' };
+    
+    let html = '';
+    Object.entries(pageGroups).forEach(([date, items]) => {
+        html += `<div class="detail-date-group">${date}</div>`;
+        items.forEach(item => {
+            const time = new Date(item.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const taskColor = taskColorMap[item.taskType] || '#6366f1';
+            const taskLabel = taskTypeMap[item.taskType] || item.taskType;
+            const imageName = item.imageName ? item.imageName : '未知图片';
+            html += `
+                <div class="detail-item">
+                    <div class="detail-thumb">
+                        ${item.imageThumbnail ? `<img src="${item.imageThumbnail}" alt="">` : '<div class="detail-thumb-placeholder"></div>'}
+                    </div>
+                    <div class="detail-main">
+                        <div class="detail-row1">
+                            <span class="detail-task" style="color:${taskColor};background:${taskColor}18;">${taskLabel}</span>
+                            <span class="detail-name">${imageName}</span>
+                            <div class="detail-tokens-right">
+                                <span class="detail-token-item total">Token: <b>${item.totalTokens}</b> ( 输入 <b>${item.inputTokens}</b> / 出 <b>${item.outputTokens}</b> )</span>
+                            </div>
+                        </div>
+                        <div class="detail-row2">
+                            <span class="detail-time">模型 ${item.model}</span>
+                            <span class="detail-model">执行于 ${time}</span>
+                            <span class="detail-token-item time">用时: ${item.duration} 秒</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+    });
+    
+    container.innerHTML = html;
+    
+    if (pagination) {
+        if (totalPages > 1) {
+            pagination.style.display = 'flex';
+            document.getElementById('detailsPageInfo').textContent = `${detailsCurrentPage + 1} / ${totalPages}`;
+            document.getElementById('detailsPrevBtn').disabled = detailsCurrentPage === 0;
+            document.getElementById('detailsNextBtn').disabled = detailsCurrentPage >= totalPages - 1;
+        } else {
+            pagination.style.display = 'none';
+        }
+    }
+}
+window.renderUsageDetails = renderUsageDetails;
