@@ -3215,7 +3215,7 @@ function renderTemplateList() {
                 <div class="template-item-name">${template.name}</div>
                 <div class="template-item-actions">
                     ${template.id === activeId ? '<div class="template-default-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>使用中</div>' : ''}
-                    ${!template.isDefault ? `<button class="template-item-btn delete" onclick="deleteTemplateConfirm('${template.id}')" title="删除"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="m19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>` : ''}
+                    ${!template.isDefault ? `<button class="template-item-btn delete" onclick="deleteTemplateConfirm('${template.id}')" title="删除"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg></button>` : ''}
                 </div>
             </div>
         `;
@@ -3299,13 +3299,13 @@ function loadTemplateToEditor(templateId) {
                         </svg>
                     </button>
                     <button class="btn-icon" onclick="saveCurrentTemplate()" title="保存" id="saveTemplateBtn" disabled>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                            <polyline points="17 21v-8H7v8"></polyline>
-                            <polyline points="7 3v5h8"></polyline>
+                            <rect x="7" y="13" width="10" height="8" rx="0"></rect>
+                            <rect x="9" y="3" width="6" height="5" rx="0"></rect>
                         </svg>
                     </button>
-                    ${!template.isDefault ? `<button class="btn-icon" onclick="deleteTemplateConfirm('${template.id}')" title="删除" style="color: #ef4444;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="m19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2h4a2 2 0 0 1 2 2v2"></path></svg></button>` : ''}
+
                 </div>
             </div>
             <div class="template-editor-body">
