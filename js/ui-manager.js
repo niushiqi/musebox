@@ -952,7 +952,10 @@ function previewTemplate(type) {
         </div>
         <div style="margin-bottom: 16px;">
             <label style="display: block; font-size: 14px; font-weight: 500; color: #374151; margin-bottom: 8px;">提示词内容</label>
-            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; font-family: monospace; font-size: 13px; line-height: 1.6; white-space: pre-wrap; max-height: 300px; overflow-y: auto;">${template.prompt}</div>
+            <div style="position: relative;">
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; padding-bottom: 32px; font-family: monospace; font-size: 13px; line-height: 1.6; white-space: pre-wrap; max-height: 300px; overflow-y: auto;">${template.prompt}</div>
+                <span style="position: absolute; bottom: 8px; right: 12px; font-size: 10px; color: #94a3b8; background: rgba(255, 255, 255, 0.9); padding: 2px 6px; border-radius: 4px; pointer-events: none; user-select: none; box-shadow: 0 1px 2px rgba(0, 0, 0, 0);">${template.prompt.length} 字</span>
+            </div>
         </div>
         <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
             <div style="font-size: 12px; font-weight: 600; color: #0369a1; margin-bottom: 8px;">💡 使用提示</div>

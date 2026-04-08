@@ -1112,6 +1112,28 @@ body {
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
+.template-form-textarea-wrapper {
+    position: relative;
+}
+
+.template-char-count {
+    position: absolute;
+    bottom: 10px;
+    right: 14px;
+    font-size: 10px;
+    color: #94a3b8;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 2px 6px;
+    border-radius: 4px;
+    pointer-events: none;
+    user-select: none;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0);
+}
+
+.template-form-textarea {
+    padding-bottom: 32px;
+}
+
 .template-preview {
     background: #f8fafc;
     border: 1px solid #e2e8f0;

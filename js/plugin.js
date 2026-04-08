@@ -2857,7 +2857,8 @@ setTimeout(() => {
     window.markTemplateAsChanged = markTemplateAsChanged;
     window.updateSelectedTemplate = updateSelectedTemplate;
     window.updateTemplateSelectors = updateTemplateSelectors;
-    
+    window.updatePromptCharCount = updatePromptCharCount;
+
     // 模板管理UI函数
     window.renderTemplateList = renderTemplateList;
     window.selectTemplate = selectTemplate;
@@ -3314,7 +3315,10 @@ function loadTemplateToEditor(templateId) {
                 </div>
                 <div class="template-form-group">
                     <label class="template-form-label">${getTypeDisplayName(template.type)}提示词</label>
-                    <textarea class="template-form-textarea" id="templatePromptInput" onchange="markTemplateAsChanged()">${template.prompt}</textarea>
+                    <div class="template-form-textarea-wrapper">
+                        <textarea class="template-form-textarea" id="templatePromptInput" onchange="markTemplateAsChanged(); updatePromptCharCount()" oninput="updatePromptCharCount()">${template.prompt}</textarea>
+                        <span class="template-char-count" id="promptCharCount">${template.prompt.length} 字</span>
+                    </div>
                 </div>
                 <!--<div class="template-preview">
                     <div class="template-preview-title">
@@ -3331,6 +3335,11 @@ function loadTemplateToEditor(templateId) {
             </div>
         </div>
     `;
+
+    // 初始化字数统计
+    setTimeout(() => {
+        updatePromptCharCount();
+    }, 50);
 }
 
 // 获取预览内容
@@ -3402,17 +3411,30 @@ function createNewTemplate() {
         if (nameInput) {
             nameInput.select();
         }
+        // 初始化字数统计
+        updatePromptCharCount();
     }, 100);
 }
 
 // 标记模板已更改
 function markTemplateAsChanged() {
     templateUIState.hasUnsavedChanges = true;
-    
+
     const saveBtn = document.getElementById('saveTemplateBtn');
     if (saveBtn) {
         saveBtn.disabled = false;
         saveBtn.style.color = '#3b82f6';
+    }
+}
+
+// 更新提示词字数统计
+function updatePromptCharCount() {
+    const promptInput = document.getElementById('templatePromptInput');
+    const charCountEl = document.getElementById('promptCharCount');
+
+    if (promptInput && charCountEl) {
+        const length = promptInput.value.length;
+        charCountEl.textContent = `${length} 字`;
     }
 }
 
