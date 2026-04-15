@@ -479,7 +479,9 @@ let pluginState = {
         manualAnnotation: true,
         apiConfigured: false,
         skipExistingAnnotations: true, // 跳过已有注释的图片
-        skipProcessedImages: true // 跳过已被插件处理过的图片
+        skipProcessedImages: true, // 跳过已被插件处理过的图片
+        skipExistingTags: true, // 跳过已有标签的图片
+        skipProcessedTags: true // 跳过已被插件打过标签的图片
     },
     tokenUsage: { // token使用统计
         totalTokens: 0,
@@ -599,6 +601,8 @@ function checkAPIConfiguration() {
             pluginState.settings.manualAnnotation = config.manualAnnotation !== undefined ? config.manualAnnotation : true;
             pluginState.settings.skipExistingAnnotations = config.skipExistingAnnotations !== undefined ? config.skipExistingAnnotations : true;
             pluginState.settings.skipProcessedImages = config.skipProcessedImages !== undefined ? config.skipProcessedImages : true;
+            pluginState.settings.skipExistingTags = config.skipExistingTags !== undefined ? config.skipExistingTags : true;
+            pluginState.settings.skipProcessedTags = config.skipProcessedTags !== undefined ? config.skipProcessedTags : true;
             
             console.log('✅ 配置加载成功:', {
                 provider: pluginConfig.provider,
@@ -1797,36 +1801,35 @@ function resetTokenStats() {
 window.resetTokenStats = resetTokenStats;
 
 // 更新UI中token统计显示
+// 豆包1.6价格计算（元）
+// 输入：0.80元/百万token，输出：2.00元/百万token
+function calcDoubaoPrice(inputTokens, outputTokens) {
+    if (!inputTokens && !outputTokens) return null;
+    const cost = (inputTokens / 1000000) * 0.80 + (outputTokens / 1000000) * 2.00;
+    return cost.toFixed(6);
+}
+
 function updateTokenUsageUI() {
-    // 更新统计信息
     const totalTokensElement = document.getElementById('total-tokens');
     const inputTokensElement = document.getElementById('input-tokens');
     const outputTokensElement = document.getElementById('output-tokens');
     const processedCountElement = document.getElementById('processed-count');
     const requestsCountElement = document.getElementById('requests-count');
+    const estimatedCostElement = document.getElementById('estimated-cost');
     
     const totalInputTokens = pluginState.tokenUsage.totalInputTokens || 0;
     const totalOutputTokens = pluginState.tokenUsage.totalOutputTokens || 0;
     const totalTokens = totalInputTokens + totalOutputTokens;
     
-    if (totalTokensElement) {
-        totalTokensElement.textContent = totalTokens.toLocaleString();
-    }
+    if (totalTokensElement) totalTokensElement.textContent = totalTokens.toLocaleString();
+    if (inputTokensElement) inputTokensElement.textContent = totalInputTokens.toLocaleString();
+    if (outputTokensElement) outputTokensElement.textContent = totalOutputTokens.toLocaleString();
+    if (processedCountElement) processedCountElement.textContent = pluginState.processedImages.size;
+    if (requestsCountElement) requestsCountElement.textContent = pluginState.tokenUsage.requests;
     
-    if (inputTokensElement) {
-        inputTokensElement.textContent = totalInputTokens.toLocaleString();
-    }
-    
-    if (outputTokensElement) {
-        outputTokensElement.textContent = totalOutputTokens.toLocaleString();
-    }
-    
-    if (processedCountElement) {
-        processedCountElement.textContent = pluginState.processedImages.size;
-    }
-    
-    if (requestsCountElement) {
-        requestsCountElement.textContent = pluginState.tokenUsage.requests;
+    if (estimatedCostElement) {
+        const price = calcDoubaoPrice(totalInputTokens, totalOutputTokens);
+        estimatedCostElement.textContent = price || '-';
     }
     
     console.log('📊 UI统计数据已更新:', {
@@ -1851,8 +1854,13 @@ async function getImageBase64(imageData) {
                 thumbnailURL: imageData.thumbnailURL
             });
             
-            // 使用参考插件的方法：通过fetch获取图片数据
-            let imageUrl = imageData.fileURL || imageData.thumbnailURL;
+            // 非图片格式优先使用缩略图（Eagle会为所有文件生成PNG缩略图）
+            const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'tif', 'svg'];
+            const ext = (imageData.ext || '').toLowerCase();
+            const isNativeImage = imageExts.includes(ext);
+            let imageUrl = isNativeImage
+                ? (imageData.fileURL || imageData.thumbnailURL)
+                : (imageData.thumbnailURL || imageData.fileURL);
             
             if (!imageUrl) {
                 const error = new Error('无法获取图片URL - 图片可能已损坏或不存在');
@@ -2472,6 +2480,8 @@ function saveConfiguration() {
             manualAnnotation: pluginState.settings.manualAnnotation,
             skipExistingAnnotations: pluginState.settings.skipExistingAnnotations,
             skipProcessedImages: pluginState.settings.skipProcessedImages,
+            skipExistingTags: pluginState.settings.skipExistingTags,
+            skipProcessedTags: pluginState.settings.skipProcessedTags,
             customModels: pluginConfig.customModels || {},
             templates: pluginConfig.templates || [],
             activeTemplateIds: pluginConfig.activeTemplateIds || {},
@@ -3314,7 +3324,13 @@ function loadTemplateToEditor(templateId) {
                     <input type="text" class="template-form-input" id="templateNameInput" value="${template.name}" onchange="markTemplateAsChanged()">
                 </div>
                 <div class="template-form-group">
-                    <label class="template-form-label">${getTypeDisplayName(template.type)}提示词</label>
+                    <label class="template-form-label" style="display:flex;align-items:center;gap:6px;">
+                        ${getTypeDisplayName(template.type)}提示词
+                        ${template.type === 'tag' ? `
+                        <span class="prompt-tip-icon" onclick="showTagPromptTip(); event.stopPropagation();">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                        </span>` : ''}
+                    </label>
                     <div class="template-form-textarea-wrapper">
                         <textarea class="template-form-textarea" id="templatePromptInput" onchange="markTemplateAsChanged(); updatePromptCharCount()" oninput="updatePromptCharCount()">${template.prompt}</textarea>
                         <span class="template-char-count" id="promptCharCount">${template.prompt.length} 字</span>
@@ -3622,6 +3638,69 @@ function navigateToUsageStats() {
 window.resetTokenStats = resetTokenStats;
 window.navigateToUsageStats = navigateToUsageStats;
 
+// 标签提示词说明弹窗
+function showTagPromptTip() {
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:99999;';
+    modal.innerHTML = `
+        <div style="background:white;border-radius:12px;padding:24px;width:300px;box-shadow:0 8px 24px rgba(0,0,0,0.15);">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                <span style="font-size:15px;font-weight:600;color:#1e293b;">关于 {availableTags} 宏</span>
+            </div>
+            <div style="font-size:13px;color:#475569;line-height:1.7;">
+                <p style="margin:0 0 10px;">在提示词中使用 <code style="background:#f1f5f9;padding:1px 5px;border-radius:4px;font-size:12px;color:#3b82f6;">{availableTags}</code> 宏，系统会自动将 Eagle 中已有的标签集合传递给大模型。</p>
+                <p style="margin:0 0 10px;">这样可以让大模型从已有标签中选择匹配的标签，而不是自由生成新标签。</p>
+                <p style="margin:0;color:#94a3b8;font-size:12px;">⚠️ 注意：标签数量过多会增加提示词长度，从而增加 token 消耗。</p>
+            </div>
+            <div style="margin-top:16px;text-align:right;">
+                <button onclick="this.closest('[style*=fixed]').remove()" style="padding:6px 16px;border:none;background:#3b82f6;color:white;border-radius:6px;cursor:pointer;font-size:13px;">知道了</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+}
+window.showTagPromptTip = showTagPromptTip;
+
+// 价格计算方式弹窗
+function showPriceDetail(inputTokens, outputTokens, totalPrice) {
+    const inputCost = ((inputTokens / 1000000) * 0.80).toFixed(6);
+    const outputCost = ((outputTokens / 1000000) * 2.00).toFixed(6);
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:99999;';
+    modal.innerHTML = `
+        <div style="background:white;border-radius:12px;padding:24px;width:280px;box-shadow:0 8px 24px rgba(0,0,0,0.15);">
+            <div style="font-size:15px;font-weight:600;color:#1e293b;margin-bottom:16px;">豆包1.6 费用明细</div>
+            <div style="font-size:13px;color:#475569;line-height:2;">
+                <div style="display:flex;justify-content:space-between;">
+                    <span>输入 ${inputTokens.toLocaleString()} token</span>
+                    <span>× ¥0.80/百万</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;color:#94a3b8;font-size:12px;margin-bottom:8px;">
+                    <span></span><span>= ¥${inputCost}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;">
+                    <span>输出 ${outputTokens.toLocaleString()} token</span>
+                    <span>× ¥2.00/百万</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;color:#94a3b8;font-size:12px;margin-bottom:12px;">
+                    <span></span><span>= ¥${outputCost}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding-top:10px;border-top:1px solid #e2e8f0;font-weight:600;color:#1e293b;">
+                    <span>合计</span><span>${totalPrice} 元</span>
+                </div>
+            </div>
+            <div style="margin-top:16px;text-align:right;">
+                <button onclick="this.closest('[style*=fixed]').remove()" style="padding:6px 16px;border:none;background:#3b82f6;color:white;border-radius:6px;cursor:pointer;font-size:13px;">关闭</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+}
+window.showPriceDetail = showPriceDetail;
+
 // 保存单条明细记录
 function saveUsageDetail(detail) {
     try {
@@ -3693,6 +3772,7 @@ function renderUsageDetails() {
             const taskColor = taskColorMap[item.taskType] || '#6366f1';
             const taskLabel = taskTypeMap[item.taskType] || item.taskType;
             const imageName = item.imageName ? item.imageName : '未知图片';
+            const priceStr = calcDoubaoPrice ? calcDoubaoPrice(item.inputTokens, item.outputTokens) : null;
             html += `
                 <div class="detail-item">
                     <div class="detail-thumb">
@@ -3709,6 +3789,7 @@ function renderUsageDetails() {
                         <div class="detail-row2">
                             <span class="detail-time">模型 ${item.model}</span>
                             <span class="detail-model">执行于 ${time}</span>
+                            ${priceStr ? `<span class="detail-price-tag" onclick="showPriceDetail(${item.inputTokens},${item.outputTokens},'${priceStr}'); event.stopPropagation();" style="cursor:pointer;">${priceStr}</span>` : ''}
                             <span class="detail-token-item time">用时: ${item.duration} 秒</span>
                         </div>
                     </div>

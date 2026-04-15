@@ -48,6 +48,9 @@ function initializeUI() {
     // 刷新图片列表
     refreshImageList();
     
+    // 初始化历史记录显示
+    initHistoryDisplay();
+    
     console.log('UI 初始化完成');
 }
 
@@ -230,324 +233,215 @@ async function refreshImageList() {
         const selectedImages = await eagle.item.getSelected();
         uiState.images = selectedImages || [];
         
-        // 更新计数（两个位置）
         const countElement = document.getElementById('imageCount');
-        const previewCountElement = document.getElementById('previewCount');
         const statusTextElement = document.getElementById('imageStatusText');
         
-        if (countElement) {
-            countElement.textContent = uiState.images.length;
-        }
-        if (previewCountElement) {
-            previewCountElement.textContent = uiState.images.length;
-        }
-        
-        // 更新状态文案
+        if (countElement) countElement.textContent = uiState.images.length;
         if (statusTextElement) {
-            if (uiState.images.length === 0) {
-                statusTextElement.textContent = '请在eagle中至少选择一张图片';
-            } else {
-                statusTextElement.textContent = '';
-            }
+            statusTextElement.textContent = uiState.images.length === 0 ? '请在eagle中至少选择一张图片' : '';
         }
         
-        // 渲染网格
-        renderImageGrid();
+        uiState.imageStatuses = {};
+        uiState.imageErrors = {};
+        uiState.images.forEach(img => {
+            uiState.imageStatuses[img.id] = 'pending';
+        });
         
-        // 更新状态图标
+        renderQueueList();
         updateStatusIcon();
         
     } catch (error) {
         console.error('刷新图片列表失败:', error);
         uiState.images = [];
-        renderImageGrid();
+        uiState.imageStatuses = {};
+        renderQueueList();
         updateStatusIcon();
     }
 }
 
-// 渲染图片网格
-function renderImageGrid() {
-    const grid = document.getElementById('imageGrid');
-    if (!grid) return;
-    
-    grid.innerHTML = '';
-    
-    const start = uiState.currentPage * uiState.itemsPerPage;
-    const end = start + uiState.itemsPerPage;
-    const pageImages = uiState.images.slice(start, end);
-    
-    if (pageImages.length === 0) {
-        grid.innerHTML = `
-            <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #94a3b8;">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 12px; opacity: 0.5;">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                    <polyline points="21 15 16 10 5 21"></polyline>
-                </svg>
-                <p>请在 Eagle 中选择图片</p>
-            </div>
-        `;
-        return;
-    }
-    
-    pageImages.forEach(image => {
-        const item = document.createElement('div');
-        item.className = 'image-item';
-        item.dataset.imageId = image.id;
-        
-        const statusText = getImageStatusText(image);
-        const statusClass = getImageStatusClass(image);
-        
-        if (statusClass) {
-            item.classList.add(statusClass);
-        }
-        
-        item.innerHTML = `
-            <div class="image-preview">
-                <img src="${image.thumbnailURL || image.fileURL}" alt="${image.name}" loading="lazy">
-            </div>
-            <div class="image-info">
-                <div class="image-name" title="${image.name}">${image.name}</div>
-                <div class="image-status">${statusText}</div>
-            </div>
-        `;
-        
-        grid.appendChild(item);
-    });
-    
-    // 更新分页信息
-    updatePaginationInfo();
-    
-    // 更新状态图标为缩略图
-    updateStatusIcon();
+// 历史记录数据（从localStorage加载）
+let historyRecords = JSON.parse(localStorage.getItem('eagleHistoryRecords') || '[]');
+let expandedRecordIds = new Set(); // 支持多条同时展开
+let currentHistoryTab = 'processing';
+
+function saveHistoryRecords() {
+    if (historyRecords.length > 50) historyRecords.splice(50);
+    localStorage.setItem('eagleHistoryRecords', JSON.stringify(historyRecords));
 }
 
-// 获取图片状态文本
-function getImageStatusText(image) {
-    if (image.annotation) {
-        return '已有注释';
-    }
-    return '等待处理';
+let historyBodyCollapsed = false;
+function toggleHistory() {
+    historyBodyCollapsed = !historyBodyCollapsed;
+    const body = document.getElementById('historyBody');
+    const chevron = document.getElementById('historyChevron');
+    if (body) body.style.display = historyBodyCollapsed ? 'none' : 'block';
+    if (chevron) chevron.style.transform = historyBodyCollapsed ? 'rotate(-90deg)' : '';
 }
+window.toggleHistory = toggleHistory;
 
-// 获取图片状态类名
-function getImageStatusClass(image) {
-    if (image.annotation) {
-        return 'done';
-    }
-    return '';
-}
-
-// 更新分页信息
-function updatePaginationInfo() {
-    const totalPages = Math.ceil(uiState.images.length / uiState.itemsPerPage);
-    const pageInfo = document.getElementById('pageInfo');
-    
-    if (pageInfo) {
-        pageInfo.textContent = `${uiState.currentPage + 1} / ${Math.max(1, totalPages)}`;
-    }
-    
-    // 更新按钮状态
-    const prevBtn = document.getElementById('prevPage');
-    const nextBtn = document.getElementById('nextPage');
-    
-    if (prevBtn) {
-        prevBtn.disabled = uiState.currentPage === 0;
-        prevBtn.style.opacity = uiState.currentPage === 0 ? '0.3' : '1';
-    }
-    
-    if (nextBtn) {
-        nextBtn.disabled = uiState.currentPage >= totalPages - 1;
-        nextBtn.style.opacity = uiState.currentPage >= totalPages - 1 ? '0.3' : '1';
-    }
-}
-
-// 开始处理
-async function handleStartProcessing() {
-    if (uiState.processing) {
-        showNotification('正在处理中,请稍候...', 'warning');
-        return;
-    }
-    
-    // 检查API配置
-    if (!window.eagleAutoAnnotation) {
-        showNotification('插件核心模块未加载', 'error');
-        return;
-    }
-    
-    const { pluginConfig } = window.eagleAutoAnnotation;
-    const apiKey = pluginConfig.apiKey;
-    
-    if (!apiKey) {
-        showNotification('请先到设置页面配置大模型', 'warning');
-        return;
-    }
-    
-    // 检查是否有启用的功能
-    const enableAnnotation = document.getElementById('enable-annotation')?.checked;
-    const enableTag = document.getElementById('enable-tag')?.checked;
-    const enableRename = document.getElementById('enable-rename')?.checked;
-    
-    if (!enableAnnotation && !enableTag && !enableRename) {
-        showNotification('请至少启用一个功能', 'warning');
-        return;
-    }    
-    // 检查是否有选中的图片
-    if (uiState.images.length === 0) {
-        showNotification('请先在 Eagle 中选择图片', 'warning');
-        return;
-    }
-    
-    try {
-        uiState.processing = true;
-        
-        // 显示进度条
-        showProgress();
-        
-        // 更新按钮状态
-        const startBtn = document.getElementById('startBtn');
-        if (startBtn) {
-            startBtn.disabled = true;
-            startBtn.innerHTML = `
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite;">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="M12 6v6l4 2"></path>
-                </svg>
-                处理中...
-            `;
-        }
-        
-        // 调用处理函数
-        let successCount = 0;
-        let errorCount = 0;
-        
-        for (let i = 0; i < uiState.images.length; i++) {
-            const image = uiState.images[i];
-            
-            // 更新进度
-            updateProgress(i + 1, uiState.images.length);
-            
-            try {
-                // 这里调用实际的 AI 处理逻辑
-                // 由于需要集成现有的 plugin.js 逻辑,这里先模拟
-                await processImageWithAI(image, {
-                    annotation: enableAnnotation,
-                    tag: enableTag,
-                    rename: enableRename
-                });
-                
-                successCount++;
-                
-                // 更新图片状态
-                updateImageStatus(image.id, 'done');
-                
-            } catch (error) {
-                console.error('处理图片失败:', image.name, error);
-                errorCount++;
-                updateImageStatus(image.id, 'error');
-            }
-            
-            // 添加延迟避免 API 限流
-            if (i < uiState.images.length - 1) {
-                await new Promise(resolve => setTimeout(resolve, 1000));
+function toggleHistoryRecord(recordId) {
+    if (expandedRecordIds.has(recordId)) {
+        expandedRecordIds.delete(recordId);
+    } else {
+        expandedRecordIds.add(recordId);
+        // 切换到有数据的tab（每条记录独立tab状态）
+        const record = historyRecords.find(r => r.id === recordId);
+        if (record) {
+            const hasProcessing = record.images.some(i => i.status === 'processing');
+            const hasError = record.images.some(i => i.status === 'error');
+            const hasDone = record.images.some(i => i.status === 'done');
+            if (!recordTabState[recordId]) {
+                if (hasProcessing) recordTabState[recordId] = 'processing';
+                else if (hasError) recordTabState[recordId] = 'error';
+                else if (hasDone) recordTabState[recordId] = 'done';
+                else recordTabState[recordId] = 'skipped';
             }
         }
-        
-        // 显示结果
-        let message = `处理完成! 成功: ${successCount} 张`;
-        if (errorCount > 0) {
-            message += `, 失败: ${errorCount} 张`;
-        }
-        
-        showNotification(message, errorCount > 0 ? 'warning' : 'success');
-        
-    } catch (error) {
-        console.error('处理过程出错:', error);
-        showNotification('处理失败: ' + error.message, 'error');
-    } finally {
-        uiState.processing = false;
-        hideProgress();
-        
-        // 刷新图片列表
-        await refreshImageList();
-        
-        // 恢复按钮文案
-        updateStartButton();
+    }
+    renderHistoryRecordList();
+}
+window.toggleHistoryRecord = toggleHistoryRecord;
+
+// 每条记录独立的tab状态
+let recordTabState = {};
+
+function switchHistoryTab(tab, recordId) {
+    recordTabState[recordId] = tab;
+    renderHistoryRecordList();
+}
+window.switchHistoryTab = switchHistoryTab;
+
+function startHistoryRecord(images, taskTypes) {
+    const index = historyRecords.length + 1;
+    const taskLabel = taskTypes.join('与');
+    const record = {
+        id: Date.now(),
+        index,
+        title: '第' + index + '次给' + images.length + '张图片' + taskLabel,
+        startTime: new Date().toISOString(),
+        images: images.map(img => ({
+            id: img.id,
+            name: img.name,
+            ext: img.ext,
+            thumbnailURL: img.thumbnailURL,
+            fileURL: img.fileURL,
+            status: 'processing',
+            error: ''
+        }))
+    };
+    historyRecords.unshift(record);
+    expandedRecordIds.add(record.id);
+    recordTabState[record.id] = 'processing';
+    saveHistoryRecords();
+    const section = document.getElementById('historySection');
+    if (section) section.style.display = 'block';
+    renderHistoryRecordList();
+    return record;
+}
+
+function updateHistoryImageStatus(recordId, imageId, status, errorMsg) {
+    const record = historyRecords.find(r => r.id === recordId);
+    if (!record) return;
+    const img = record.images.find(i => i.id === imageId);
+    if (!img) return;
+    img.status = status;
+    if (errorMsg) img.error = errorMsg;
+    saveHistoryRecords();
+    renderHistoryRecordList();
+}
+
+function finishHistoryRecord(recordId) {
+    const record = historyRecords.find(r => r.id === recordId);
+    if (record && expandedRecordIds.has(recordId)) {
+        const hasError = record.images.some(i => i.status === 'error');
+        const hasDone = record.images.some(i => i.status === 'done');
+        if (hasError) recordTabState[recordId] = 'error';
+        else if (hasDone) recordTabState[recordId] = 'done';
+        else recordTabState[recordId] = 'skipped';
+    }
+    saveHistoryRecords();
+    renderHistoryRecordList();
+}
+
+function renderHistoryRecordList() {
+    const container = document.getElementById('historyRecordList');
+    if (!container) return;
+    if (historyRecords.length === 0) {
+        container.innerHTML = '<div class="queue-empty">暂无历史记录</div>';
+        return;
+    }
+    const statusConfig = {
+        processing: { color: '#3b82f6', label: '处理中', bg: '#eff6ff' },
+        done:       { color: '#10b981', label: '已完成', bg: '#f0fdf4' },
+        error:      { color: '#ef4444', label: '失败',   bg: '#fef2f2' },
+        skipped:    { color: '#94a3b8', label: '未处理', bg: '#f8fafc' }
+    };
+    container.innerHTML = historyRecords.map(record => {
+        const isExpanded = expandedRecordIds.has(record.id);
+        const isProcessing = record.images.some(i => i.status === 'processing');
+        const doneCount = record.images.filter(i => i.status === 'done').length;
+        const errorCount = record.images.filter(i => i.status === 'error').length;
+        const time = new Date(record.startTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+        let dotColor = '#10b981';
+        if (isProcessing) dotColor = '#3b82f6';
+        else if (errorCount > 0) dotColor = '#ef4444';
+        const counts = { processing: 0, done: 0, error: 0, skipped: 0 };
+        record.images.forEach(img => { counts[img.status] = (counts[img.status] || 0) + 1; });
+        const tabs = [];
+        if (counts.processing > 0) tabs.push({ key: 'processing', label: '处理中', badgeClass: '' });
+        tabs.push(
+            { key: 'done',    label: '已完成', badgeClass: 'success' },
+            { key: 'error',   label: '失败',   badgeClass: 'error' },
+            { key: 'skipped', label: '未处理', badgeClass: 'muted' }
+        );
+        const tabsHtml = tabs.map(t =>
+            '<button class="queue-tab ' + (isExpanded && recordTabState[record.id] === t.key ? 'active' : '') + '" ' +
+            'onclick="switchHistoryTab(\'' + t.key + '\', ' + record.id + '); event.stopPropagation();">' +
+            t.label + ' <span class="queue-badge ' + t.badgeClass + '">' + (counts[t.key] || 0) + '</span></button>'
+        ).join('');
+        const activeTab = isExpanded ? (recordTabState[record.id] || 'done') : 'done';
+        const filtered = record.images.filter(img => img.status === activeTab);
+        const emptyTexts = { processing: '暂无处理中图片', done: '暂无已完成图片', error: '暂无失败图片', skipped: '暂无未处理图片' };
+        const listHtml = filtered.length === 0
+            ? '<div class="queue-empty">' + (emptyTexts[activeTab] || '') + '</div>'
+            : filtered.map(img => {
+                const cfg = statusConfig[img.status] || statusConfig.processing;
+                return '<div class="queue-item" style="border-left:3px solid ' + cfg.color + ';">' +
+                    '<div class="queue-item-thumb"><img src="' + (img.thumbnailURL || img.fileURL || '') + '" alt="" loading="lazy"></div>' +
+                    '<div class="queue-item-info">' +
+                    '<div class="queue-item-name">' + img.name + (img.ext ? '.' + img.ext : '') + '</div>' +
+                    (img.error ? '<div class="queue-item-error">' + img.error + '</div>' : '') +
+                    '</div>' +
+                    '<span class="queue-item-badge" style="color:' + cfg.color + ';background:' + cfg.bg + ';">' + cfg.label + '</span>' +
+                    '</div>';
+            }).join('');
+        return '<div class="history-record-item ' + (isExpanded ? 'expanded' : '') + '" onclick="toggleHistoryRecord(' + record.id + ')">' +
+            '<span class="history-record-dot" style="background:' + dotColor + ';"></span>' +
+            '<div class="history-record-info">' +
+            '<div class="history-record-title">' + record.title + '</div>' +
+            '<div class="history-record-meta">' + time + ' · 完成' + doneCount + '张' + (errorCount > 0 ? ' · 失败' + errorCount + '张' : '') + '</div>' +
+            '</div>' +
+            '<svg style="flex-shrink:0;color:#94a3b8;transition:transform 0.2s;' + (isExpanded ? 'transform:rotate(180deg)' : '') + '" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>' +
+            '</div>' +
+            (isExpanded ? '<div class="history-record-detail"><div class="queue-tabs">' + tabsHtml + '</div><div class="queue-list">' + listHtml + '</div></div>' : '');
+    }).join('');
+}
+
+function initHistoryDisplay() {
+    if (historyRecords.length > 0) {
+        const section = document.getElementById('historySection');
+        if (section) section.style.display = 'block';
+        expandedRecordIds = new Set();
+        recordTabState = {};
+        renderHistoryRecordList();
     }
 }
 
-// 处理单张图片 (集成现有逻辑)
-async function processImageWithAI(image, options) {
-    if (!window.eagleAutoAnnotation) {
-        throw new Error('插件核心模块未加载');
-    }
-    
-    const { pluginConfig, generateImageAnnotation, addAnnotationToImage } = window.eagleAutoAnnotation;
-    
-    // 检查 API 配置
-    const apiKey = pluginConfig.apiKey;
-    
-    if (!apiKey) {
-        throw new Error('API 密钥未配置');
-    }
-    
-    // 生成注释
-    if (options.annotation) {
-        const annotation = await generateImageAnnotation(image);
-        if (annotation) {
-            await addAnnotationToImage(image, annotation);
-        }
-    }
-    
-    // 添加标签
-    if (options.tag) {
-        await generateAndApplyTags(image);
-    }
-}
-
-// 生成并应用标签
-async function generateAndApplyTags(image) {
-    const { generateImageTags } = window.eagleAutoAnnotation;
-    
-    const tags = await generateImageTags(image);
-    if (!tags || tags.length === 0) return;
-    
-    // 合并已有标签
-    const existingTags = image.tags || [];
-    const mergedTags = Array.from(new Set([...existingTags, ...tags]));
-    
-    image.tags = mergedTags;
-    
-    if (typeof image.save === 'function') {
-        await image.save();
-        console.log('标签已保存:', mergedTags);
-    }
-}
-
-// 更新图片状态
-function updateImageStatus(imageId, status) {
-    const imageItem = document.querySelector(`[data-image-id="${imageId}"]`);
-    if (!imageItem) return;
-    
-    // 移除所有状态类
-    imageItem.classList.remove('processing', 'done', 'error');
-    
-    // 添加新状态类
-    if (status) {
-        imageItem.classList.add(status);
-    }
-    
-    // 更新状态文本
-    const statusElement = imageItem.querySelector('.image-status');
-    if (statusElement) {
-        const statusTexts = {
-            'processing': '处理中...',
-            'done': '处理完成',
-            'error': '处理失败'
-        };
-        statusElement.textContent = statusTexts[status] || '等待处理';
-    }
-}
+// 兼容旧的updateImageStatus（不再使用，保留避免报错）
+function updateImageStatus(imageId, status, errorMsg) {}
+function renderQueueList() {}
+function switchQueueTab(tab) {}
+window.switchQueueTab = switchQueueTab;
 
 // 显示进度条
 function showProgress() {
@@ -653,6 +547,16 @@ function loadConfigToUI() {
     const skipProcessed = document.getElementById('skipProcessed');
     if (skipProcessed) {
         skipProcessed.checked = pluginState.settings.skipProcessedImages !== false;
+    }
+    
+    const skipExistingTags = document.getElementById('skipExistingTags');
+    if (skipExistingTags) {
+        skipExistingTags.checked = pluginState.settings.skipExistingTags !== false;
+    }
+    
+    const skipProcessedTags = document.getElementById('skipProcessedTags');
+    if (skipProcessedTags) {
+        skipProcessedTags.checked = pluginState.settings.skipProcessedTags !== false;
     }
     
     // 更新测试按钮状态
@@ -846,6 +750,8 @@ function saveSettings() {
     // 保存处理偏好
     pluginState.settings.skipExistingAnnotations = document.getElementById('skipExisting')?.checked !== false;
     pluginState.settings.skipProcessedImages = document.getElementById('skipProcessed')?.checked !== false;
+    pluginState.settings.skipExistingTags = document.getElementById('skipExistingTags')?.checked !== false;
+    pluginState.settings.skipProcessedTags = document.getElementById('skipProcessedTags')?.checked !== false;
     
     // 调用保存函数
     window.eagleAutoAnnotation.saveConfiguration();
@@ -1062,6 +968,148 @@ function updateStatusIcon() {
         }).join('');
         container.className = 'status-icon has-images';
     }
+}
+
+// 开始处理
+async function handleStartProcessing() {
+    if (uiState.processing) {
+        showNotification('正在处理中,请稍候...', 'warning');
+        return;
+    }
+    
+    if (!window.eagleAutoAnnotation) {
+        showNotification('插件核心模块未加载', 'error');
+        return;
+    }
+    
+    const { pluginConfig } = window.eagleAutoAnnotation;
+    if (!pluginConfig.apiKey) {
+        showNotification('请先到设置页面配置大模型', 'warning');
+        return;
+    }
+    
+    const enableAnnotation = document.getElementById('enable-annotation')?.checked;
+    const enableTag = document.getElementById('enable-tag')?.checked;
+    const enableRename = document.getElementById('enable-rename')?.checked;
+    
+    if (!enableAnnotation && !enableTag && !enableRename) {
+        showNotification('请至少启用一个功能', 'warning');
+        return;
+    }
+    
+    if (uiState.images.length === 0) {
+        showNotification('请先在 Eagle 中选择图片', 'warning');
+        return;
+    }
+    
+    try {
+        uiState.processing = true;
+        showProgress();
+        
+        const startBtn = document.getElementById('startBtn');
+        if (startBtn) {
+            startBtn.disabled = true;
+            startBtn.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite;">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M12 6v6l4 2"></path>
+                </svg>
+                处理中...
+            `;
+        }
+        
+        // 开始历史记录
+        const taskTypes = [];
+        if (enableAnnotation) taskTypes.push('注释');
+        if (enableTag) taskTypes.push('打标签');
+        const historyRecord = startHistoryRecord(uiState.images, taskTypes);
+        
+        let successCount = 0;
+        let errorCount = 0;
+        let skippedCount = 0;
+        
+        for (let i = 0; i < uiState.images.length; i++) {
+            const image = uiState.images[i];
+            updateProgress(i + 1, uiState.images.length);
+            
+            // 检查跳过条件
+            const { pluginState } = window.eagleAutoAnnotation;
+            if (enableAnnotation && pluginState.settings.skipExistingAnnotations && image.annotation) {
+                skippedCount++;
+                updateHistoryImageStatus(historyRecord.id, image.id, 'skipped', '已有注释，跳过');
+                continue;
+            }
+            
+            if (enableTag && pluginState.settings.skipExistingTags && image.tags && image.tags.length > 0) {
+                skippedCount++;
+                updateHistoryImageStatus(historyRecord.id, image.id, 'skipped', '已有标签，跳过');
+                continue;
+            }
+            
+            try {
+                await processImageWithAI(image, {
+                    annotation: enableAnnotation,
+                    tag: enableTag,
+                    rename: enableRename
+                });
+                successCount++;
+                updateHistoryImageStatus(historyRecord.id, image.id, 'done');
+            } catch (error) {
+                console.error('处理图片失败:', image.name, error);
+                errorCount++;
+                updateHistoryImageStatus(historyRecord.id, image.id, 'error', error.message);
+            }
+            
+            if (i < uiState.images.length - 1) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
+        
+        // 处理完成
+        finishHistoryRecord(historyRecord.id);
+        
+        let message = `处理完成! 成功: ${successCount} 张`;
+        if (skippedCount > 0) message += `，跳过: ${skippedCount} 张`;
+        if (errorCount > 0) message += `，失败: ${errorCount} 张`;
+        showNotification(message, errorCount > 0 ? 'warning' : 'success');
+        
+    } catch (error) {
+        console.error('处理过程出错:', error);
+        showNotification('处理失败: ' + error.message, 'error');
+    } finally {
+        uiState.processing = false;
+        hideProgress();
+        updateStartButton();
+    }
+}
+
+// 处理单张图片
+async function processImageWithAI(image, options) {
+    if (!window.eagleAutoAnnotation) throw new Error('插件核心模块未加载');
+    
+    const { pluginConfig, generateImageAnnotation, addAnnotationToImage } = window.eagleAutoAnnotation;
+    
+    if (!pluginConfig.apiKey) throw new Error('API 密钥未配置');
+    
+    if (options.annotation) {
+        const annotation = await generateImageAnnotation(image);
+        if (annotation) await addAnnotationToImage(image, annotation);
+    }
+    
+    if (options.tag) {
+        await generateAndApplyTags(image);
+    }
+}
+
+// 生成并应用标签
+async function generateAndApplyTags(image) {
+    const { generateImageTags } = window.eagleAutoAnnotation;
+    const tags = await generateImageTags(image);
+    if (!tags || tags.length === 0) return;
+    const existingTags = image.tags || [];
+    const mergedTags = Array.from(new Set([...existingTags, ...tags]));
+    image.tags = mergedTags;
+    if (typeof image.save === 'function') await image.save();
 }
 
 // 导出函数供全局使用

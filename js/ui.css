@@ -752,7 +752,7 @@ body {
 /* 统计卡片 */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 16px;
 }
 
@@ -1536,4 +1536,282 @@ body {
 .detail-token-item.time {
     background: #eff6ff;
     color: gray;
+}
+
+/* 队列tab */
+.queue-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 0;
+}
+
+.queue-tab {
+    padding: 8px 12px;
+    border: none;
+    background: transparent;
+    font-size: 13px;
+    color: #64748b;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.queue-tab:hover {
+    color: #3b82f6;
+}
+
+.queue-tab.active {
+    color: #3b82f6;
+    border-bottom-color: #3b82f6;
+    font-weight: 500;
+}
+
+.queue-badge {
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    background: #f1f5f9;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.queue-badge.success { background: #f0fdf4; color: #10b981; }
+.queue-badge.error   { background: #fef2f2; color: #ef4444; }
+.queue-badge.muted   { background: #f8fafc; color: #94a3b8; }
+
+.queue-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.queue-empty {
+    text-align: center;
+    padding: 32px;
+    color: #94a3b8;
+    font-size: 13px;
+}
+
+.queue-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: #fafafa;
+    border-radius: 8px;
+    border: 1px solid #f1f5f9;
+    transition: all 0.2s;
+}
+
+.queue-item:hover {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+}
+
+.queue-item-thumb {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #e2e8f0;
+}
+
+.queue-item-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.queue-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.queue-item-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: #1e293b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.queue-item-error {
+    font-size: 11px;
+    color: #ef4444;
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.queue-item-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+/* 历史记录 */
+.history-section {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    margin-top: 16px;
+    overflow: hidden;
+}
+
+.history-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s;
+}
+
+.history-header:hover {
+    background: #f8fafc;
+}
+
+.history-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+}
+
+.history-chevron {
+    color: #94a3b8;
+    transition: transform 0.2s;
+}
+
+.history-body {
+    border-top: 1px solid #f1f5f9;
+    padding: 12px 16px 16px;
+}
+
+/* 历史记录条目列表 */
+.history-record-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
+}
+
+.history-record-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+    border: 1px solid transparent;
+}
+
+.history-record-item:hover {
+    background: #f8fafc;
+}
+
+.history-record-item.active {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+}
+
+.history-record-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.history-record-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.history-record-title {
+    font-size: 12px;
+    font-weight: 500;
+    color: #1e293b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.history-record-meta {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 1px;
+}
+
+/* 历史记录手风琴详情 */
+.history-record-detail {
+    margin: 0 0 8px 16px;
+    padding: 10px 12px;
+    background: #f8fafc;
+    border-radius: 0 0 8px 8px;
+    border: 1px solid #f1f5f9;
+    border-top: none;
+}
+
+.history-record-item {
+    border-radius: 8px 8px 0 0;
+}
+
+.history-record-item:not(.expanded) {
+    border-radius: 8px;
+    margin-bottom: 4px;
+}
+
+/* 设置二级标题 */
+.settings-subsection-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+/* 提示词问号图标 */
+.prompt-tip-icon {
+    display: inline-flex;
+    align-items: center;
+    color: #94a3b8;
+    cursor: help;
+    position: relative;
+}
+
+.prompt-tip-icon:hover {
+    color: #3b82f6;
+}
+
+.prompt-tip-icon[title] {
+    cursor: help;
+}
+
+/* 价格估算tag */
+.detail-price-tag {
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    flex-shrink: 0;
+    color: #64748b;
+    background: #f1f5f9;
 }

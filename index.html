@@ -210,26 +210,19 @@
                     </label>
                 </div> -->
 
-                <!-- 预览队列 -->
-                <div class="preview-section">
-                    <div class="preview-header">
-                        <h3>预览队列 (<span id="previewCount">0</span>)</h3>
-                        <div class="pagination">
-                            <button class="btn-icon" id="prevPage">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="15 18 9 12 15 6"></polyline>
-                                </svg>
-                            </button>
-                            <span id="pageInfo">1 / 1</span>
-                            <button class="btn-icon" id="nextPage">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="9 18 15 12 9 6"></polyline>
-                                </svg>
-                            </button>
+                <!-- 历史记录 -->
+                <div class="history-section" id="historySection">
+                    <div class="history-header" onclick="toggleHistory()">
+                        <div class="history-title">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            历史记录
                         </div>
+                        <svg class="history-chevron" id="historyChevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
                     </div>
-                    <div class="image-grid" id="imageGrid">
-                        <!-- 图片项将动态添加 -->
+                    <div class="history-body" id="historyBody">
+                        <div class="history-record-list" id="historyRecordList">
+                            <div class="queue-empty">暂无历史记录</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -319,6 +312,10 @@
                             <div class="stat-value" id="requests-count">0</div>
                             <div class="stat-label">总次数</div>
                         </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="estimated-cost">-</div>
+                            <div class="stat-label">预估费用(元)</div>
+                        </div>
                     </div>
                 </div>
 
@@ -400,6 +397,8 @@
                 <div class="settings-section">
                     <h3 class="section-title">个性化</h3>
                     
+                    <div class="settings-subsection-title">添加注释</div>
+
                     <div class="setting-item">
                         <div class="setting-info">
                             <div class="setting-title">跳过已有注释的图片</div>
@@ -418,6 +417,30 @@
                         </div>
                         <label class="toggle">
                             <input type="checkbox" id="skipProcessed" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="settings-subsection-title" style="margin-top: 16px;">打标签</div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <div class="setting-title">跳过已有标签的图片</div>
+                            <div class="setting-desc">如果图片已有标签，则跳过处理</div>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" id="skipExistingTags" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <div class="setting-title">跳过已处理过标签的图片</div>
+                            <div class="setting-desc">记住已打过标签的图片，避免重复处理</div>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" id="skipProcessedTags" checked>
                             <span class="toggle-slider"></span>
                         </label>
                     </div>
