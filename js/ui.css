@@ -1713,7 +1713,7 @@ body {
 .history-record-item {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 14px;
     padding: 8px 10px;
     border-radius: 6px;
     cursor: pointer;
@@ -1731,8 +1731,8 @@ body {
 }
 
 .history-record-dot {
-    width: 8px;
-    height: 8px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
     flex-shrink: 0;
 }
@@ -1814,4 +1814,85 @@ body {
     flex-shrink: 0;
     color: #64748b;
     background: #f1f5f9;
+}
+
+/* 模板选择器+预览按钮合体 */
+.template-select-group {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.template-select-group .form-select {
+    padding-right: 52px;
+    min-width: 160px;
+}
+
+.template-preview-btn {
+    position: absolute;
+    right: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+    pointer-events: auto;
+}
+
+.template-preview-btn:hover {
+    color: #3b82f6;
+}
+
+/* 历史记录处理结果 */
+.queue-item-result {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #64748b;
+    flex-shrink: 0;
+    max-width: 160px;
+}
+
+.result-before {
+    color: #94a3b8;
+    background: #f1f5f9;
+    padding: 1px 5px;
+    border-radius: 3px;
+    cursor: default;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.result-arrow {
+    color: #cbd5e1;
+    font-size: 10px;
+}
+
+.result-after {
+    color: #1e293b;
+    background: #f0fdf4;
+    padding: 1px 5px;
+    border-radius: 3px;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: help;
+    border: 1px solid #bbf7d0;
+}
+
+/* 结果容器 - 上下两行 */
+.queue-item-results {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex-shrink: 0;
+    max-width: 160px;
 }

@@ -12,7 +12,7 @@
         <div class="tabs">
             <div class="tab active" data-tab="dashboard">
                 <svg width="16" height="16" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 18V42H39V18L24 6L9 18Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 29V42H29V29H19Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M9 42H39" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
-                图片处理
+                图片批量
             </div>
             <div class="tab" data-tab="templates">
                 <svg width="16" height="16" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M23 4H4V26H23V4Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M44 34H4V43H44V34Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M44 4H31V12H44V4Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M44 18H31V26H44V18Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/></svg>
@@ -20,7 +20,7 @@
             </div>
             <div class="tab" data-tab="stats">
                 <svg width="16" height="16" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 44V28" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M18 44V20" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M30 44V32" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M42 44V12" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M6 16L18 8L30 20L42 4" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                数据统计
+            成本统计
             </div>
             <div class="tab" data-tab="settings">
                 <svg width="16" height="16" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M24 4L18 10H10V18L4 24L10 30V38H18L24 44L30 38H38V30L44 24L38 18V10H30L24 4Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M24 30C27.3137 30 30 27.3137 30 24C30 20.6863 27.3137 18 24 18C20.6863 18 18 20.6863 18 24C18 27.3137 20.6863 30 24 30Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/></svg>
@@ -63,7 +63,7 @@
                             </svg>
                         </div>
                         <div class="status-info">
-                            <h2>已选中 <span id="imageCount">0</span> 张图片</h2>
+                            <h2>已选择 <span id="imageCount">0</span> 张图片</h2>
                             <p id="imageStatusText">请在eagle中至少选择一张图片</p>
                         </div>
                         <button class="icon-btn" onclick="refreshImageListWithAnimation(this)" title="刷新选中状态">
@@ -79,27 +79,26 @@
                     <!-- 注释控制 -->
                     <div class="control-row active" data-feature="annotation">
                         <div class="control-icon">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                <polyline points="14 2 14 8 20 8"></polyline>
-                                <line x1="16" y1="13" x2="8" y2="13"></line>
-                                <line x1="16" y1="17" x2="8" y2="17"></line>
-                                <polyline points="10 9 9 9 8 9"></polyline>
-                            </svg>
+                            <svg width="22" height="22" viewBox="0 0 1024 1024" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M832 64 192 64C121.6 64 64 121.6 64 192l0 512c0 70.4 57.6 128 128 128l128 0 132.096 120.448C459.072 957.632 466.88 960 474.432 960 493.824 960 512 944.704 512 922.496L512 832l320 0c70.4 0 128-57.6 128-128L960 192C960 121.6 902.4 64 832 64zM896 704c0 35.328-28.672 64-64 64L512 768c-16.96 0-33.28 6.72-45.248 18.752S448 815.04 448 832l0 30.08-84.864-77.376C351.296 773.952 335.936 768 320 768L192 768c-35.328 0-64-28.672-64-64L128 192c0-35.328 28.672-64 64-64l640 0c35.328 0 64 28.672 64 64L896 704zM736 320l-448 0C270.336 320 256 334.336 256 352S270.336 384 288 384l448 0C753.664 384 768 369.664 768 352S753.664 320 736 320zM736 512l-448 0C270.336 512 256 526.336 256 544S270.336 576 288 576l448 0C753.664 576 768 561.664 768 544S753.664 512 736 512z"></path></svg>
                         </div>
                         <div class="control-info">
                             <div class="control-title">添加注释</div>
                             <!-- <div class="control-desc">使用 AI 描述图片内容</div> -->
                         </div>
                         <div class="control-actions">
-                            <select class="form-select" id="annotation-template" onchange="updateSelectedTemplate('annotation')">
-                                <!-- 模板选项将动态加载 -->
-                            </select>
-                            <button class="btn-icon" title="预览模板" onclick="previewTemplate('annotation')">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                    <circle cx="12" cy="12" r="3"></circle>
-                                </svg>
+                            <div class="template-select-group">
+                                <select class="form-select" id="annotation-template" onchange="updateSelectedTemplate('annotation')">
+                                    <!-- 模板选项将动态加载 -->
+                                </select>
+                                <button class="template-preview-btn" title="预览模板" onclick="previewTemplate('annotation')">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                </button>
+                            </div>
+                            <button class="btn-icon" title="注释设置" onclick="navigateToFeatureSettings('annotation')">
+                                <svg width="16" height="16" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18.2838 43.1713C14.9327 42.1736 11.9498 40.3213 9.58787 37.867C10.469 36.8227 11 35.4734 11 34.0001C11 30.6864 8.31371 28.0001 5 28.0001C4.79955 28.0001 4.60139 28.01 4.40599 28.0292C4.13979 26.7277 4 25.3803 4 24.0001C4 21.9095 4.32077 19.8938 4.91579 17.9995C4.94381 17.9999 4.97188 18.0001 5 18.0001C8.31371 18.0001 11 15.3138 11 12.0001C11 11.0488 10.7786 10.1493 10.3846 9.35011C12.6975 7.1995 15.5205 5.59002 18.6521 4.72314C19.6444 6.66819 21.6667 8.00013 24 8.00013C26.3333 8.00013 28.3556 6.66819 29.3479 4.72314C32.4795 5.59002 35.3025 7.1995 37.6154 9.35011C37.2214 10.1493 37 11.0488 37 12.0001C37 15.3138 39.6863 18.0001 43 18.0001C43.0281 18.0001 43.0562 17.9999 43.0842 17.9995C43.6792 19.8938 44 21.9095 44 24.0001C44 25.3803 43.8602 26.7277 43.594 28.0292C43.3986 28.01 43.2005 28.0001 43 28.0001C39.6863 28.0001 37 30.6864 37 34.0001C37 35.4734 37.531 36.8227 38.4121 37.867C36.0502 40.3213 33.0673 42.1736 29.7162 43.1713C28.9428 40.752 26.676 39.0001 24 39.0001C21.324 39.0001 19.0572 40.752 18.2838 43.1713Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M24 31C27.866 31 31 27.866 31 24C31 20.134 27.866 17 24 17C20.134 17 17 20.134 17 24C17 27.866 20.134 31 24 31Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/></svg>
                             </button>
                             <label class="toggle">
                                 <input type="checkbox" checked id="enable-annotation">
@@ -111,23 +110,25 @@
                     <!-- 标签控制 -->
                     <div class="control-row" data-feature="tag">
                         <div class="control-icon">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
-                                <line x1="7" y1="7" x2="7.01" y2="7"></line>
-                            </svg>
+                            <svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 4H39V44L24 33.4286L9 44V4Z" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><rect x="9" y="4" width="30" height="12" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         </div>
                         <div class="control-info">
                             <div class="control-title">添加标签</div>
                         </div>
                         <div class="control-actions">
-                            <select class="form-select" id="tag-template" onchange="updateSelectedTemplate('tag')">
-                                <!-- 模板选项将动态加载 -->
-                            </select>
-                            <button class="btn-icon" title="预览模板" onclick="previewTemplate('tag')">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                    <circle cx="12" cy="12" r="3"></circle>
-                                </svg>
+                            <div class="template-select-group">
+                                <select class="form-select" id="tag-template" onchange="updateSelectedTemplate('tag')">
+                                    <!-- 模板选项将动态加载 -->
+                                </select>
+                                <button class="template-preview-btn" title="预览模板" onclick="previewTemplate('tag')">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                </button>
+                            </div>
+                            <button class="btn-icon" title="标签设置" onclick="navigateToFeatureSettings('tag')">
+                                <svg width="16" height="16" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18.2838 43.1713C14.9327 42.1736 11.9498 40.3213 9.58787 37.867C10.469 36.8227 11 35.4734 11 34.0001C11 30.6864 8.31371 28.0001 5 28.0001C4.79955 28.0001 4.60139 28.01 4.40599 28.0292C4.13979 26.7277 4 25.3803 4 24.0001C4 21.9095 4.32077 19.8938 4.91579 17.9995C4.94381 17.9999 4.97188 18.0001 5 18.0001C8.31371 18.0001 11 15.3138 11 12.0001C11 11.0488 10.7786 10.1493 10.3846 9.35011C12.6975 7.1995 15.5205 5.59002 18.6521 4.72314C19.6444 6.66819 21.6667 8.00013 24 8.00013C26.3333 8.00013 28.3556 6.66819 29.3479 4.72314C32.4795 5.59002 35.3025 7.1995 37.6154 9.35011C37.2214 10.1493 37 11.0488 37 12.0001C37 15.3138 39.6863 18.0001 43 18.0001C43.0281 18.0001 43.0562 17.9999 43.0842 17.9995C43.6792 19.8938 44 21.9095 44 24.0001C44 25.3803 43.8602 26.7277 43.594 28.0292C43.3986 28.01 43.2005 28.0001 43 28.0001C39.6863 28.0001 37 30.6864 37 34.0001C37 35.4734 37.531 36.8227 38.4121 37.867C36.0502 40.3213 33.0673 42.1736 29.7162 43.1713C28.9428 40.752 26.676 39.0001 24 39.0001C21.324 39.0001 19.0572 40.752 18.2838 43.1713Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M24 31C27.866 31 31 27.866 31 24C31 20.134 27.866 17 24 17C20.134 17 17 20.134 17 24C17 27.866 20.134 31 24 31Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/></svg>
                             </button>
                             <label class="toggle">
                                 <input type="checkbox" id="enable-tag">
@@ -139,9 +140,7 @@
                     <!-- 重命名控制 -->
                     <div class="control-row disabled" data-feature="rename" onclick="showComingSoonNotification('文件重命名')">
                         <div class="control-icon">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                            </svg>
+                            <svg width="26" height="26" viewBox="0 0 1024 1024" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M544 768h-384c-17.92 0-32-14.08-32-32v-384c0-17.92 14.08-32 32-32h384c17.92 0 32 14.08 32 32s-14.08 32-32 32H192v320h352c17.92 0 32 14.08 32 32s-14.08 32-32 32z m-256-256c-17.92 0-32 14.08-32 32s14.08 32 32 32h192c17.92 0 32-14.08 32-32S497.92 512 480 512h-192z m512 384H704V192h96c17.92 0 32-14.08 32-32s-14.08-32-32-32h-256c-17.92 0-32 14.08-32 32s14.08 32 32 32H640v704H544c-17.92 0-32 14.08-32 32s14.08 32 32 32h256c17.92 0 32-14.08 32-32s-14.08-32-32-32z m64-576h-64c-17.92 0-32 14.08-32 32s14.08 32 32 32h32v320h-32c-17.92 0-32 14.08-32 32s14.08 32 32 32h64c17.92 0 32-14.08 32-32v-384c0-17.92-14.08-32-32-32z"></path></svg>
                         </div>
                         <div class="control-info">
                             <div class="control-title">重命名 <span class="coming-soon-badge">开发中</span></div>
@@ -164,7 +163,6 @@
                         </div>
                     </div>
 
-                    <!-- 开始按钮和使用统计 -->
                     <div class="start-button-container">
                         <button class="btn btn-primary" id="startBtn" onclick="handleStartProcessing()">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -172,11 +170,6 @@
                             </svg>
                             开始处理
                         </button>
-
-                        <!-- 使用统计链接 -->
-                        <div class="usage-stats-link" onclick="navigateToUsageStats()">
-                            使用统计
-                        </div>
                     </div>
 
                     <!-- 进度条 -->
@@ -222,6 +215,15 @@
                     <div class="history-body" id="historyBody">
                         <div class="history-record-list" id="historyRecordList">
                             <div class="queue-empty">暂无历史记录</div>
+                        </div>
+                        <div id="historyPagination" style="display:none; margin-top:12px; align-items:center; justify-content:center; gap:12px; font-size:13px; color:#64748b;">
+                            <button class="btn-icon" id="historyPrevBtn" onclick="changeHistoryPage(-1)">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                            </button>
+                            <span id="historyPageInfo">1 / 1</span>
+                            <button class="btn-icon" id="historyNextBtn" onclick="changeHistoryPage(1)">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -395,7 +397,7 @@
 
                 <!-- 处理偏好 -->
                 <div class="settings-section">
-                    <h3 class="section-title">个性化</h3>
+                    <h3 class="section-title">高级设置</h3>
                     
                     <div class="settings-subsection-title">添加注释</div>
 
@@ -421,7 +423,7 @@
                         </label>
                     </div>
 
-                    <div class="settings-subsection-title" style="margin-top: 16px;">打标签</div>
+                    <div class="settings-subsection-title" style="margin-top: 16px;">添加标签</div>
 
                     <div class="setting-item">
                         <div class="setting-info">

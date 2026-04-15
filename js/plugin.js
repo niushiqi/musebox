@@ -3671,7 +3671,7 @@ function showPriceDetail(inputTokens, outputTokens, totalPrice) {
     modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:99999;';
     modal.innerHTML = `
         <div style="background:white;border-radius:12px;padding:24px;width:280px;box-shadow:0 8px 24px rgba(0,0,0,0.15);">
-            <div style="font-size:15px;font-weight:600;color:#1e293b;margin-bottom:16px;">豆包1.6 费用明细</div>
+            <div style="font-size:15px;font-weight:600;color:#1e293b;margin-bottom:16px;">费用明细</div>
             <div style="font-size:13px;color:#475569;line-height:2;">
                 <div style="display:flex;justify-content:space-between;">
                     <span>输入 ${inputTokens.toLocaleString()} token</span>

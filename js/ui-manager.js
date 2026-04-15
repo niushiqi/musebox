@@ -183,6 +183,26 @@ async function toggleAlwaysOnTop() {
 
 window.toggleAlwaysOnTop = toggleAlwaysOnTop;
 
+// 跳转到设置页面对应功能的个性化区域
+function navigateToFeatureSettings(feature) {
+    switchTab('settings');
+    setTimeout(() => {
+        // 查找对应的二级标题
+        const titles = document.querySelectorAll('.settings-subsection-title');
+        const targetText = feature === 'annotation' ? '添加注释' : '打标签';
+        let target = null;
+        titles.forEach(t => {
+            if (t.textContent.trim() === targetText) target = t;
+        });
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            target.style.color = '#3b82f6';
+            setTimeout(() => { target.style.color = ''; }, 2000);
+        }
+    }, 150);
+}
+window.navigateToFeatureSettings = navigateToFeatureSettings;
+
 // 分页控制
 function setupPagination() {
     const prevBtn = document.getElementById('prevPage');
@@ -263,6 +283,15 @@ async function refreshImageList() {
 let historyRecords = JSON.parse(localStorage.getItem('eagleHistoryRecords') || '[]');
 let expandedRecordIds = new Set(); // 支持多条同时展开
 let currentHistoryTab = 'processing';
+let historyCurrentPage = 0;
+const HISTORY_PER_PAGE = 20;
+
+function changeHistoryPage(delta) {
+    const totalPages = Math.ceil(historyRecords.length / HISTORY_PER_PAGE);
+    historyCurrentPage = Math.max(0, Math.min(historyCurrentPage + delta, totalPages - 1));
+    renderHistoryRecordList();
+}
+window.changeHistoryPage = changeHistoryPage;
 
 function saveHistoryRecords() {
     if (historyRecords.length > 50) historyRecords.splice(50);
@@ -317,7 +346,7 @@ function startHistoryRecord(images, taskTypes) {
     const record = {
         id: Date.now(),
         index,
-        title: '第' + index + '次给' + images.length + '张图片' + taskLabel,
+        title: '给' + images.length + '张图片' + taskTypes.map(t => '添加' + t).join('与'),
         startTime: new Date().toISOString(),
         images: images.map(img => ({
             id: img.id,
@@ -339,13 +368,14 @@ function startHistoryRecord(images, taskTypes) {
     return record;
 }
 
-function updateHistoryImageStatus(recordId, imageId, status, errorMsg) {
+function updateHistoryImageStatus(recordId, imageId, status, errorMsg, result) {
     const record = historyRecords.find(r => r.id === recordId);
     if (!record) return;
     const img = record.images.find(i => i.id === imageId);
     if (!img) return;
     img.status = status;
     if (errorMsg) img.error = errorMsg;
+    if (result) img.result = result; // 保存处理结果
     saveHistoryRecords();
     renderHistoryRecordList();
 }
@@ -376,15 +406,67 @@ function renderHistoryRecordList() {
         error:      { color: '#ef4444', label: '失败',   bg: '#fef2f2' },
         skipped:    { color: '#94a3b8', label: '未处理', bg: '#f8fafc' }
     };
-    container.innerHTML = historyRecords.map(record => {
+    
+    // 按日期分组（仅当前页）
+    const totalPages = Math.ceil(historyRecords.length / HISTORY_PER_PAGE);
+    const start = historyCurrentPage * HISTORY_PER_PAGE;
+    const pageRecords = historyRecords.slice(start, start + HISTORY_PER_PAGE);
+    
+    // 更新分页控件
+    const pagination = document.getElementById('historyPagination');
+    if (pagination) {
+        if (totalPages > 1) {
+            pagination.style.display = 'flex';
+            document.getElementById('historyPageInfo').textContent = (historyCurrentPage + 1) + ' / ' + totalPages;
+            document.getElementById('historyPrevBtn').disabled = historyCurrentPage === 0;
+            document.getElementById('historyNextBtn').disabled = historyCurrentPage >= totalPages - 1;
+        } else {
+            pagination.style.display = 'none';
+        }
+    }
+    
+    // 按日期分组
+    const groups = {};
+    pageRecords.forEach(record => {
+        const date = new Date(record.startTime).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
+        if (!groups[date]) groups[date] = [];
+        groups[date].push(record);
+    });
+    
+    let html = '';
+    Object.entries(groups).forEach(([date, records]) => {
+        html += '<div class="detail-date-group">' + date + '</div>';
+        html += records.map(record => {
         const isExpanded = expandedRecordIds.has(record.id);
         const isProcessing = record.images.some(i => i.status === 'processing');
         const doneCount = record.images.filter(i => i.status === 'done').length;
         const errorCount = record.images.filter(i => i.status === 'error').length;
+        const skippedCount = record.images.filter(i => i.status === 'skipped').length;
+        const processingCount = record.images.filter(i => i.status === 'processing').length;
         const time = new Date(record.startTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+        
+        // 构建结果摘要
+        const metaParts = [];
+        if (processingCount > 0) metaParts.push('处理中 ' + processingCount + ' 张');
+        if (doneCount > 0) metaParts.push('已完成 ' + doneCount + ' 张');
+        if (errorCount > 0) metaParts.push('失败 ' + errorCount + ' 张');
+        if (skippedCount > 0) metaParts.push('已跳过 ' + skippedCount + ' 张');
+        const metaResult = metaParts.join(' · ') || '暂无结果';
         let dotColor = '#10b981';
-        if (isProcessing) dotColor = '#3b82f6';
-        else if (errorCount > 0) dotColor = '#ef4444';
+        let dotStyle = 'background:' + '#10b981' + ';';
+        if (isProcessing) {
+            dotStyle = 'background:#3b82f6;';
+        } else if (doneCount === 0 && errorCount === 0 && skippedCount > 0) {
+            dotStyle = 'background:#94a3b8;'; // 全部跳过
+        } else if (doneCount === 0 && errorCount > 0) {
+            dotStyle = 'background:#ef4444;'; // 全部失败
+        } else if (doneCount > 0 && errorCount === 0 && skippedCount === 0) {
+            dotStyle = 'background:#10b981;'; // 全部完成
+        } else if (doneCount > 0 && errorCount > 0) {
+            dotStyle = 'background:linear-gradient(90deg, #10b981 50%, #ef4444 50%);'; // 部分完成部分失败
+        } else if (doneCount > 0 && skippedCount > 0) {
+            dotStyle = 'background:linear-gradient(90deg, #10b981 50%, #94a3b8 50%);'; // 部分完成部分跳过
+        }
         const counts = { processing: 0, done: 0, error: 0, skipped: 0 };
         record.images.forEach(img => { counts[img.status] = (counts[img.status] || 0) + 1; });
         const tabs = [];
@@ -412,19 +494,27 @@ function renderHistoryRecordList() {
                     '<div class="queue-item-name">' + img.name + (img.ext ? '.' + img.ext : '') + '</div>' +
                     (img.error ? '<div class="queue-item-error">' + img.error + '</div>' : '') +
                     '</div>' +
-                    '<span class="queue-item-badge" style="color:' + cfg.color + ';background:' + cfg.bg + ';">' + cfg.label + '</span>' +
+                    ((img.result && img.result.annotation) || (img.result && img.result.tags && img.result.tags.length > 0) ?
+                        '<div class="queue-item-results">' +
+                        (img.result.annotation ? '<div class="queue-item-result"><span class="result-before" title="处理前">空</span><span class="result-arrow">→</span><span class="result-after" title="' + img.result.annotation.replace(/"/g, '&quot;') + '">' + img.result.annotation.substring(0, 20) + (img.result.annotation.length > 20 ? '…' : '') + '</span></div>' : '') +
+                        (img.result.tags && img.result.tags.length > 0 ? '<div class="queue-item-result"><span class="result-before" title="处理前">无标签</span><span class="result-arrow">→</span><span class="result-after" title="' + img.result.tags.join('、') + '">' + img.result.tags.slice(0, 3).join('、') + (img.result.tags.length > 3 ? '…' : '') + '</span></div>' : '') +
+                        '</div>'
+                        : '<span class="queue-item-badge" style="color:' + cfg.color + ';background:' + cfg.bg + ';">' + cfg.label + '</span>') +
                     '</div>';
             }).join('');
         return '<div class="history-record-item ' + (isExpanded ? 'expanded' : '') + '" onclick="toggleHistoryRecord(' + record.id + ')">' +
-            '<span class="history-record-dot" style="background:' + dotColor + ';"></span>' +
+            '<span class="history-record-dot" style="' + dotStyle + '"></span>' +
             '<div class="history-record-info">' +
             '<div class="history-record-title">' + record.title + '</div>' +
-            '<div class="history-record-meta">' + time + ' · 完成' + doneCount + '张' + (errorCount > 0 ? ' · 失败' + errorCount + '张' : '') + '</div>' +
+            '<div class="history-record-meta">' + time + ' · ' + metaResult + '</div>' +
             '</div>' +
             '<svg style="flex-shrink:0;color:#94a3b8;transition:transform 0.2s;' + (isExpanded ? 'transform:rotate(180deg)' : '') + '" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>' +
             '</div>' +
             (isExpanded ? '<div class="history-record-detail"><div class="queue-tabs">' + tabsHtml + '</div><div class="queue-list">' + listHtml + '</div></div>' : '');
-    }).join('');
+        }).join('');
+    });
+    
+    container.innerHTML = html;
 }
 
 function initHistoryDisplay() {
@@ -1047,13 +1137,13 @@ async function handleStartProcessing() {
             }
             
             try {
-                await processImageWithAI(image, {
+                const result = await processImageWithAI(image, {
                     annotation: enableAnnotation,
                     tag: enableTag,
                     rename: enableRename
                 });
                 successCount++;
-                updateHistoryImageStatus(historyRecord.id, image.id, 'done');
+                updateHistoryImageStatus(historyRecord.id, image.id, 'done', null, result);
             } catch (error) {
                 console.error('处理图片失败:', image.name, error);
                 errorCount++;
@@ -1091,25 +1181,34 @@ async function processImageWithAI(image, options) {
     
     if (!pluginConfig.apiKey) throw new Error('API 密钥未配置');
     
+    const result = { annotation: null, tags: null };
+    
     if (options.annotation) {
         const annotation = await generateImageAnnotation(image);
-        if (annotation) await addAnnotationToImage(image, annotation);
+        if (annotation) {
+            await addAnnotationToImage(image, annotation);
+            result.annotation = annotation;
+        }
     }
     
     if (options.tag) {
-        await generateAndApplyTags(image);
+        const tags = await generateAndApplyTags(image);
+        if (tags) result.tags = tags;
     }
+    
+    return result;
 }
 
 // 生成并应用标签
 async function generateAndApplyTags(image) {
     const { generateImageTags } = window.eagleAutoAnnotation;
     const tags = await generateImageTags(image);
-    if (!tags || tags.length === 0) return;
+    if (!tags || tags.length === 0) return null;
     const existingTags = image.tags || [];
     const mergedTags = Array.from(new Set([...existingTags, ...tags]));
     image.tags = mergedTags;
     if (typeof image.save === 'function') await image.save();
+    return tags; // 返回新增的标签
 }
 
 // 导出函数供全局使用
