@@ -2734,6 +2734,14 @@ async function testAPIConnection() {
         pluginConfig.apiConnected = true;
         saveConfiguration();
         
+        // 埋点：测试连接成功
+        if (window.mixpanel) {
+            mixpanel.track('api_connected', {
+                provider: pluginConfig.provider,
+                model: pluginConfig.model
+            });
+        }
+        
         // 更新UI状态，隐藏API配置警告
         if (typeof checkAPIConfigurationUI === 'function') {
             checkAPIConfigurationUI();

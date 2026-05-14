@@ -1114,6 +1114,15 @@ async function handleStartProcessing() {
         if (enableTag) taskTypes.push('打标签');
         const historyRecord = startHistoryRecord(uiState.images, taskTypes);
         
+        // 埋点：开始处理
+        if (window.mixpanel) {
+            mixpanel.track('process_start', {
+                image_count: uiState.images.length,
+                tasks: taskTypes.join(','),
+                provider: window.eagleAutoAnnotation?.pluginConfig?.provider || ''
+            });
+        }
+        
         let successCount = 0;
         let errorCount = 0;
         let skippedCount = 0;
