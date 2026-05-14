@@ -293,12 +293,45 @@
                 <!-- 端侧 AI -->
                 <div class="settings-section" id="localAISection">
                     <h3 class="section-title">端侧 AI</h3>
-                    <button class="btn btn-local-ai" id="localAIBtn" onclick="toggleLocalAI()">
+
+                    <!-- 下载按钮 -->
+                    <button class="btn btn-download-model" id="downloadModelBtn" onclick="handleDownloadModelClick()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        <span id="downloadModelBtnText">下载模型</span>
+                    </button>
+
+                    <!-- 下载/解压进度区域 -->
+                    <div class="model-progress-area" id="modelProgressArea" style="display:none;">
+                        <!-- 解压警告 -->
+                        <div class="unzip-warning" id="unzipWarning" style="display:none;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                            解压中，请勿关闭插件
+                        </div>
+                        <!-- 进度条 -->
+                        <div class="model-progress-bar-wrap">
+                            <div class="model-progress-bar-fill" id="modelProgressFill" style="width:0%"></div>
+                        </div>
+                        <!-- 进度信息 -->
+                        <div class="model-progress-info">
+                            <span id="modelProgressLabel">准备中...</span>
+                            <span id="modelProgressPercent">0%</span>
+                        </div>
+                        <div class="model-progress-meta" id="modelProgressMeta"></div>
+                    </div>
+
+                    <!-- 启动按钮 -->
+                    <button class="btn btn-local-ai" id="localAIBtn" onclick="toggleLocalAI()" disabled>
                         <svg id="localAIBtnIcon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                             <polygon points="5 3 19 12 5 21 5 3"></polygon>
                         </svg>
                         <span id="localAIBtnText">启动</span>
                     </button>
+
+                    <!-- 终端输出 -->
                     <div class="local-ai-terminal" id="localAITerminal">
                         <div class="terminal-output" id="terminalOutput">
                             <span class="terminal-placeholder">等待启动...</span>

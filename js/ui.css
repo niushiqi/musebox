@@ -1279,6 +1279,84 @@ body {
 }
 
 /* 端侧 AI */
+.btn-download-model {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #6366f1;
+    color: white;
+    margin-bottom: 12px;
+}
+
+.btn-download-model:hover:not(:disabled) {
+    background: #4f46e5;
+}
+
+.btn-download-model:disabled {
+    background: #c7d2fe;
+    cursor: not-allowed;
+}
+
+.btn-download-model.delete-mode {
+    background: #ef4444;
+}
+
+.btn-download-model.delete-mode:hover:not(:disabled) {
+    background: #dc2626;
+}
+
+/* 进度区域 */
+.model-progress-area {
+    margin-bottom: 14px;
+}
+
+.unzip-warning {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #ef4444;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.model-progress-bar-wrap {
+    width: 100%;
+    height: 8px;
+    background: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+
+.model-progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #6366f1, #3b82f6);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.model-progress-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 4px;
+}
+
+.model-progress-meta {
+    font-size: 11px;
+    color: #94a3b8;
+    line-height: 1.6;
+}
+
 .btn-local-ai {
     display: inline-flex;
     align-items: center;
@@ -1295,15 +1373,20 @@ body {
     margin-bottom: 14px;
 }
 
-.btn-local-ai:hover {
+.btn-local-ai:hover:not(:disabled) {
     background: #059669;
+}
+
+.btn-local-ai:disabled {
+    background: #a7f3d0;
+    cursor: not-allowed;
 }
 
 .btn-local-ai.running {
     background: #ef4444;
 }
 
-.btn-local-ai.running:hover {
+.btn-local-ai.running:hover:not(:disabled) {
     background: #dc2626;
 }
 

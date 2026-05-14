@@ -48,6 +48,9 @@ function initializeUI() {
     // 刷新图片列表
     refreshImageList();
     
+    // 初始化端侧 AI 区域状态
+    setTimeout(() => initLocalAISection(), 200);
+    
     console.log('UI 初始化完成');
 }
 
@@ -951,7 +954,423 @@ window.refreshImageListWithAnimation = refreshImageListWithAnimation;
 let localAIProcess = null;
 let localAIRunning = false;
 
-// 切换端侧 AI 启动/停止
+// 下载状态
+const dlState = {
+    status: 'idle',       // idle | downloading | paused | unzipping | done | unzip_failed
+    downloaded: 0,        // 已下载字节数
+    total: 0,             // 文件总字节数
+    startTime: 0,         // 本段下载开始时间
+    startBytes: 0,        // 本段开始时的已下载字节数
+    request: null,        // 当前 http 请求对象
+    fileStream: null,     // 写入流
+};
+
+const MODEL_URL = 'https://www.aidevhome.com/data/adh2/models/suggested/qwen2.5vl3b-8380-2.42.zip';
+const MODEL_ZIP_NAME = 'qwen2.5vl3b-8380-2.42.zip';
+const MODEL_DIR_NAME = 'qwen2.5vl3b';
+const PROGRESS_KEY = 'localAI_dl_progress'; // localStorage key 保存已下载字节数
+
+// ---- 工具函数 ----
+function getPluginPath() {
+    return window.eaglePlugin ? window.eaglePlugin.path : '';
+}
+
+function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    if (bytes < 1024 * 1024 * 1024) return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+    return (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB';
+}
+
+function formatSeconds(sec) {
+    if (!isFinite(sec) || sec <= 0) return '--';
+    if (sec < 60) return Math.ceil(sec) + ' 秒';
+    if (sec < 3600) return Math.ceil(sec / 60) + ' 分钟';
+    return (sec / 3600).toFixed(1) + ' 小时';
+}
+
+// ---- 进度 UI ----
+function showProgressArea(show) {
+    const el = document.getElementById('modelProgressArea');
+    if (el) el.style.display = show ? 'block' : 'none';
+}
+
+function setProgressBar(percent) {
+    const fill = document.getElementById('modelProgressFill');
+    const pct = document.getElementById('modelProgressPercent');
+    if (fill) fill.style.width = percent + '%';
+    if (pct) pct.textContent = percent.toFixed(1) + '%';
+}
+
+function setProgressLabel(text) {
+    const el = document.getElementById('modelProgressLabel');
+    if (el) el.textContent = text;
+}
+
+function setProgressMeta(text) {
+    const el = document.getElementById('modelProgressMeta');
+    if (el) el.textContent = text;
+}
+
+function showUnzipWarning(show) {
+    const el = document.getElementById('unzipWarning');
+    if (el) el.style.display = show ? 'flex' : 'none';
+}
+
+// ---- 下载按钮状态 ----
+// state: 'download' | 'pause' | 'resume' | 'unzipping' | 'delete'
+function setDownloadBtn(state) {
+    const btn = document.getElementById('downloadModelBtn');
+    const txt = document.getElementById('downloadModelBtnText');
+    if (!btn || !txt) return;
+
+    btn.disabled = false;
+    btn.classList.remove('delete-mode');
+
+    const icons = {
+        download: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`,
+        pause:    `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>`,
+        resume:   `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`,
+        unzipping:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"></path></svg>`,
+        delete:   `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>`,
+        reUnzip:  `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"></path></svg>`,
+    };
+
+    const labels = {
+        download: '下载模型',
+        pause:    '暂停下载',
+        resume:   '继续下载',
+        unzipping:'解压中',
+        delete:   '删除模型',
+        reUnzip:  '重新解压',
+    };
+
+    btn.innerHTML = (icons[state] || '') + `<span id="downloadModelBtnText">${labels[state] || state}</span>`;
+
+    if (state === 'unzipping') {
+        btn.disabled = true;
+    }
+    if (state === 'delete') {
+        btn.classList.add('delete-mode');
+    }
+}
+
+// ---- 启动按钮可用性 ----
+function setLaunchBtnEnabled(enabled) {
+    const btn = document.getElementById('localAIBtn');
+    if (btn) btn.disabled = !enabled;
+}
+
+// ---- 检查模型是否已存在 ----
+function checkModelExists() {
+    const fs = require('fs');
+    const path = require('path');
+    const pluginPath = getPluginPath();
+    if (!pluginPath) return false;
+    const modelDir = path.join(pluginPath, MODEL_DIR_NAME);
+    // 目录存在且非空视为已下载
+    try {
+        const files = fs.readdirSync(modelDir);
+        return files.length > 0;
+    } catch (e) {
+        return false;
+    }
+}
+
+// ---- 初始化端侧AI区域状态 ----
+function initLocalAISection() {
+    if (checkModelExists()) {
+        // 模型已存在
+        dlState.status = 'done';
+        setDownloadBtn('delete');
+        setLaunchBtnEnabled(true);
+        showProgressArea(false);
+    } else {
+        // 检查是否有未完成的下载
+        const saved = parseInt(localStorage.getItem(PROGRESS_KEY) || '0', 10);
+        if (saved > 0) {
+            dlState.downloaded = saved;
+            dlState.status = 'paused';
+            setDownloadBtn('resume');
+            showProgressArea(true);
+            setProgressLabel('下载已暂停');
+            setProgressBar(0); // total 未知，先显示0
+            setProgressMeta(`已下载 ${formatBytes(saved)}`);
+        } else {
+            dlState.status = 'idle';
+            setDownloadBtn('download');
+            showProgressArea(false);
+        }
+        setLaunchBtnEnabled(false);
+    }
+}
+
+// ---- 下载按钮点击分发 ----
+function handleDownloadModelClick() {
+    switch (dlState.status) {
+        case 'idle':       startDownload(); break;
+        case 'downloading':pauseDownload(); break;
+        case 'paused':     startDownload(); break;  // 续传
+        case 'unzip_failed': startUnzip(); break;
+        case 'done':       deleteModel(); break;
+        default: break;
+    }
+}
+
+// ---- 开始/续传下载 ----
+function startDownload() {
+    const https = require('https');
+    const fs = require('fs');
+    const path = require('path');
+    const pluginPath = getPluginPath();
+    const zipPath = path.join(pluginPath, MODEL_ZIP_NAME);
+
+    const existingSize = dlState.downloaded > 0
+        ? dlState.downloaded
+        : (fs.existsSync(zipPath) ? fs.statSync(zipPath).size : 0);
+
+    dlState.downloaded = existingSize;
+    dlState.status = 'downloading';
+    dlState.startTime = Date.now();
+    dlState.startBytes = existingSize;
+
+    setDownloadBtn('pause');
+    showProgressArea(true);
+    setProgressLabel(existingSize > 0 ? '续传中...' : '下载中...');
+
+    const options = {
+        headers: existingSize > 0 ? { 'Range': `bytes=${existingSize}-` } : {}
+    };
+
+    const req = https.get(MODEL_URL, options, (res) => {
+        // 服务器不支持续传时重头来
+        const isResume = res.statusCode === 206;
+        if (res.statusCode !== 200 && res.statusCode !== 206) {
+            dlState.status = 'paused';
+            setDownloadBtn('resume');
+            setProgressLabel('下载失败，请重试');
+            showNotification(`下载失败，HTTP ${res.statusCode}`, 'error');
+            return;
+        }
+
+        // 计算总大小
+        if (isResume) {
+            const range = res.headers['content-range']; // bytes 0-xxx/total
+            if (range) {
+                dlState.total = parseInt(range.split('/')[1], 10);
+            }
+        } else {
+            dlState.total = parseInt(res.headers['content-length'] || '0', 10);
+            dlState.downloaded = 0;
+        }
+
+        const writeFlag = isResume ? 'a' : 'w';
+        dlState.fileStream = fs.createWriteStream(zipPath, { flags: writeFlag });
+
+        res.on('data', (chunk) => {
+            dlState.downloaded += chunk.length;
+            localStorage.setItem(PROGRESS_KEY, String(dlState.downloaded));
+
+            // 计算速度和剩余时间
+            const elapsed = (Date.now() - dlState.startTime) / 1000;
+            const deltaBytes = dlState.downloaded - dlState.startBytes;
+            const speed = elapsed > 0 ? deltaBytes / elapsed : 0;
+            const remaining = speed > 0 ? (dlState.total - dlState.downloaded) / speed : Infinity;
+            const percent = dlState.total > 0 ? (dlState.downloaded / dlState.total) * 100 : 0;
+
+            setProgressBar(percent);
+            setProgressLabel('下载中...');
+            setProgressMeta(
+                `已下载 ${formatBytes(dlState.downloaded)} / ${formatBytes(dlState.total)}` +
+                `　速度 ${formatBytes(speed)}/s　剩余 ${formatSeconds(remaining)}`
+            );
+        });
+
+        res.on('end', () => {
+            if (dlState.fileStream) dlState.fileStream.end();
+            if (dlState.status === 'downloading') {
+                // 下载完成，开始解压
+                localStorage.removeItem(PROGRESS_KEY);
+                setProgressBar(100);
+                setProgressLabel('下载完成，准备解压...');
+                setProgressMeta('');
+                setTimeout(() => startUnzip(), 500);
+            }
+        });
+
+        res.on('error', (err) => {
+            dlState.status = 'paused';
+            setDownloadBtn('resume');
+            setProgressLabel('下载出错，可继续下载');
+            showNotification('下载出错: ' + err.message, 'error');
+        });
+
+        res.pipe(dlState.fileStream);
+    });
+
+    req.on('error', (err) => {
+        dlState.status = 'paused';
+        setDownloadBtn('resume');
+        setProgressLabel('连接失败，可继续下载');
+        showNotification('连接失败: ' + err.message, 'error');
+    });
+
+    dlState.request = req;
+}
+
+// ---- 暂停下载 ----
+function pauseDownload() {
+    if (dlState.request) {
+        dlState.request.destroy();
+        dlState.request = null;
+    }
+    if (dlState.fileStream) {
+        dlState.fileStream.end();
+        dlState.fileStream = null;
+    }
+    dlState.status = 'paused';
+    setDownloadBtn('resume');
+    setProgressLabel('已暂停');
+    showNotification('下载已暂停', 'info');
+}
+
+// ---- 解压 ----
+function startUnzip() {
+    const path = require('path');
+    const fs = require('fs');
+    const pluginPath = getPluginPath();
+    const zipPath = path.join(pluginPath, MODEL_ZIP_NAME);
+    const destDir = path.join(pluginPath, MODEL_DIR_NAME);
+
+    dlState.status = 'unzipping';
+    setDownloadBtn('unzipping');
+    showUnzipWarning(true);
+    setProgressBar(0);
+    setProgressLabel('正在读取压缩包...');
+    setProgressMeta('');
+
+    // 确保目标目录存在
+    if (!fs.existsSync(destDir)) {
+        fs.mkdirSync(destDir, { recursive: true });
+    }
+
+    // 用 PowerShell System.IO.Compression 逐条目解压：
+    // 1. 跳过 zip 内顶层目录，直接把内容解压到 destDir
+    // 2. 每解压一个文件输出进度行，格式：PROGRESS:已完成数/总数
+    const { spawn } = require('child_process');
+
+    // 把路径里的反斜杠转义，避免 PS 字符串问题
+    const zipPathPS  = zipPath.replace(/\\/g, '\\\\');
+    const destDirPS  = destDir.replace(/\\/g, '\\\\');
+
+    const psScript = `
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$zip = [System.IO.Compression.ZipFile]::OpenRead('${zipPathPS}')
+$entries = $zip.Entries | Where-Object { $_.Name -ne '' }
+$total = $entries.Count
+$done = 0
+foreach ($entry in $entries) {
+    # 去掉第一段目录（zip 内顶层目录名）
+    $parts = $entry.FullName -split '/',2
+    $relPath = if ($parts.Count -gt 1) { $parts[1] } else { $parts[0] }
+    if ($relPath -eq '') { $done++; continue }
+    $target = Join-Path '${destDirPS}' $relPath
+    $targetDir = Split-Path $target -Parent
+    if (-not (Test-Path $targetDir)) { New-Item -ItemType Directory -Path $targetDir -Force | Out-Null }
+    [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $target, $true)
+    $done++
+    Write-Output "PROGRESS:$done/$total"
+}
+$zip.Dispose()
+Write-Output "DONE"
+`.trim();
+
+    const ps = spawn('powershell.exe', [
+        '-NoProfile', '-NonInteractive', '-Command', psScript
+    ]);
+
+    let totalFiles = 0;
+    let doneFiles  = 0;
+
+    ps.stdout.on('data', (data) => {
+        const lines = data.toString().split('\n');
+        lines.forEach(line => {
+            line = line.trim();
+            if (line.startsWith('PROGRESS:')) {
+                const parts = line.slice(9).split('/');
+                doneFiles  = parseInt(parts[0], 10);
+                totalFiles = parseInt(parts[1], 10);
+                if (totalFiles > 0) {
+                    const pct = (doneFiles / totalFiles) * 100;
+                    setProgressBar(pct);
+                    setProgressLabel('解压中...');
+                    setProgressMeta(`已解压 ${doneFiles} / ${totalFiles} 个文件`);
+                }
+            }
+        });
+    });
+
+    ps.stderr.on('data', (data) => {
+        console.warn('[unzip stderr]', data.toString());
+    });
+
+    ps.on('close', (code) => {
+        showUnzipWarning(false);
+        if (code === 0) {
+            try { fs.unlinkSync(zipPath); } catch (e) { console.warn('删除zip失败:', e); }
+            dlState.status = 'done';
+            setProgressBar(100);
+            setProgressLabel('解压完成');
+            setProgressMeta('');
+            setDownloadBtn('delete');
+            setLaunchBtnEnabled(true);
+            showNotification('模型已就绪，可以启动端侧 AI', 'success');
+        } else {
+            dlState.status = 'unzip_failed';
+            setProgressLabel('解压失败');
+            setProgressMeta('');
+            setDownloadBtn('reUnzip');
+            showNotification('解压失败，请点击重新解压', 'error');
+        }
+    });
+
+    ps.on('error', (err) => {
+        showUnzipWarning(false);
+        dlState.status = 'unzip_failed';
+        setProgressLabel('解压失败: ' + err.message);
+        setDownloadBtn('reUnzip');
+        showNotification('解压失败: ' + err.message, 'error');
+    });
+}
+
+// ---- 删除模型 ----
+function deleteModel() {
+    if (!confirm('确定要删除模型文件吗？删除后需要重新下载。')) return;
+
+    const fs = require('fs');
+    const path = require('path');
+    const pluginPath = getPluginPath();
+    const modelDir = path.join(pluginPath, MODEL_DIR_NAME);
+
+    try {
+        // 递归删除目录
+        fs.rmSync(modelDir, { recursive: true, force: true });
+    } catch (e) {
+        console.warn('删除模型目录失败:', e);
+    }
+
+    dlState.status = 'idle';
+    dlState.downloaded = 0;
+    dlState.total = 0;
+    localStorage.removeItem(PROGRESS_KEY);
+
+    setDownloadBtn('download');
+    showProgressArea(false);
+    setLaunchBtnEnabled(false);
+    showNotification('模型已删除', 'success');
+}
+
+// ---- 切换端侧 AI 启动/停止 ----
 function toggleLocalAI() {
     if (localAIRunning) {
         stopLocalAI();
@@ -960,49 +1379,40 @@ function toggleLocalAI() {
     }
 }
 
-// 启动端侧 AI
+// ---- 启动端侧 AI ----
 function startLocalAI() {
     const { spawn } = require('child_process');
     const path = require('path');
-    
-    // 获取插件路径
-    const pluginPath = window.eaglePlugin ? window.eaglePlugin.path : '';
+
+    const pluginPath = getPluginPath();
     const exePath = path.join(pluginPath, 'GenieAPIService', 'GenieAPIService.exe');
-    const configPath = 'C:\\Users\\niushiqi\\Desktop\\code\\test-exex\\qwen2.5vl3b\\config.json';
-    
-    // 清空终端
+    const configPath = path.join(pluginPath, MODEL_DIR_NAME, 'config.json');
+
     const terminalOutput = document.getElementById('terminalOutput');
     if (terminalOutput) {
         terminalOutput.innerHTML = '<span class="terminal-line system">正在启动端侧 AI 服务...</span>\n';
     }
-    
+
     try {
-        // 启动进程
         localAIProcess = spawn(exePath, ['-c', configPath, '-l']);
         localAIRunning = true;
-        
-        // 更新按钮状态
         updateLocalAIButton(true);
-        
-        // 监听标准输出
+
         localAIProcess.stdout.on('data', (data) => {
             appendTerminalOutput(data.toString(), 'stdout');
         });
-        
-        // 监听错误输出
+
         localAIProcess.stderr.on('data', (data) => {
             appendTerminalOutput(data.toString(), 'stderr');
         });
-        
-        // 监听进程退出
+
         localAIProcess.on('close', (code) => {
             localAIRunning = false;
             updateLocalAIButton(false);
             appendTerminalOutput(`进程已退出，退出码: ${code}`, 'system');
             localAIProcess = null;
         });
-        
-        // 监听错误
+
         localAIProcess.on('error', (err) => {
             localAIRunning = false;
             updateLocalAIButton(false);
@@ -1010,10 +1420,10 @@ function startLocalAI() {
             localAIProcess = null;
             showNotification('启动失败: ' + err.message, 'error');
         });
-        
+
         appendTerminalOutput('服务启动中，请稍候...', 'system');
         showNotification('端侧 AI 服务启动中...', 'info');
-        
+
     } catch (error) {
         console.error('启动端侧 AI 失败:', error);
         appendTerminalOutput(`启动失败: ${error.message}`, 'stderr');
@@ -1022,44 +1432,42 @@ function startLocalAI() {
     }
 }
 
-// 停止端侧 AI
+// ---- 停止端侧 AI ----
 function stopLocalAI() {
     if (!localAIProcess) {
         showNotification('服务未运行', 'warning');
         return;
     }
-    
+
     try {
-        // Windows 下使用 taskkill 强制终止进程树
         const { exec } = require('child_process');
         exec(`taskkill /pid ${localAIProcess.pid} /T /F`, (error) => {
             if (error) {
                 console.error('停止进程失败:', error);
-                // 尝试直接 kill
                 localAIProcess.kill('SIGTERM');
             }
         });
-        
+
         localAIRunning = false;
         updateLocalAIButton(false);
-        appendTerminalOutput('\n服务已停止\n', 'system');
+        appendTerminalOutput('服务已停止', 'system');
         showNotification('端侧 AI 服务已停止', 'success');
         localAIProcess = null;
-        
+
     } catch (error) {
         console.error('停止端侧 AI 失败:', error);
         showNotification('停止失败: ' + error.message, 'error');
     }
 }
 
-// 更新按钮状态
+// ---- 更新启动按钮状态 ----
 function updateLocalAIButton(running) {
     const btn = document.getElementById('localAIBtn');
     const btnText = document.getElementById('localAIBtnText');
     const btnIcon = document.getElementById('localAIBtnIcon');
-    
+
     if (!btn || !btnText || !btnIcon) return;
-    
+
     if (running) {
         btn.classList.add('running');
         btnText.textContent = '停止';
@@ -1071,18 +1479,14 @@ function updateLocalAIButton(running) {
     }
 }
 
-// 追加终端输出
+// ---- 追加终端输出 ----
 function appendTerminalOutput(text, type = 'stdout') {
     const terminalOutput = document.getElementById('terminalOutput');
     if (!terminalOutput) return;
-    
-    // 移除占位符
+
     const placeholder = terminalOutput.querySelector('.terminal-placeholder');
-    if (placeholder) {
-        placeholder.remove();
-    }
-    
-    // 添加新行
+    if (placeholder) placeholder.remove();
+
     const lines = text.split('\n');
     lines.forEach(line => {
         if (line.trim()) {
@@ -1093,8 +1497,7 @@ function appendTerminalOutput(text, type = 'stdout') {
             terminalOutput.appendChild(document.createTextNode('\n'));
         }
     });
-    
-    // 自动滚动到底部
+
     terminalOutput.scrollTop = terminalOutput.scrollHeight;
 }
 
@@ -1102,3 +1505,5 @@ function appendTerminalOutput(text, type = 'stdout') {
 window.toggleLocalAI = toggleLocalAI;
 window.startLocalAI = startLocalAI;
 window.stopLocalAI = stopLocalAI;
+window.handleDownloadModelClick = handleDownloadModelClick;
+window.initLocalAISection = initLocalAISection;
