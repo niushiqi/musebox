@@ -943,3 +943,162 @@ async function refreshImageListWithAnimation(button) {
 
 // 导出函数供全局使用
 window.refreshImageListWithAnimation = refreshImageListWithAnimation;
+
+
+// ==================== 端侧 AI 管理 ====================
+
+// 端侧 AI 进程状态
+let localAIProcess = null;
+let localAIRunning = false;
+
+// 切换端侧 AI 启动/停止
+function toggleLocalAI() {
+    if (localAIRunning) {
+        stopLocalAI();
+    } else {
+        startLocalAI();
+    }
+}
+
+// 启动端侧 AI
+function startLocalAI() {
+    const { spawn } = require('child_process');
+    const path = require('path');
+    
+    // 获取插件路径
+    const pluginPath = window.eaglePlugin ? window.eaglePlugin.path : '';
+    const exePath = path.join(pluginPath, 'GenieAPIService', 'GenieAPIService.exe');
+    const configPath = 'C:\\Users\\niushiqi\\Desktop\\code\\test-exex\\qwen2.5vl3b\\config.json';
+    
+    // 清空终端
+    const terminalOutput = document.getElementById('terminalOutput');
+    if (terminalOutput) {
+        terminalOutput.innerHTML = '<span class="terminal-line system">正在启动端侧 AI 服务...</span>\n';
+    }
+    
+    try {
+        // 启动进程
+        localAIProcess = spawn(exePath, ['-c', configPath, '-l']);
+        localAIRunning = true;
+        
+        // 更新按钮状态
+        updateLocalAIButton(true);
+        
+        // 监听标准输出
+        localAIProcess.stdout.on('data', (data) => {
+            appendTerminalOutput(data.toString(), 'stdout');
+        });
+        
+        // 监听错误输出
+        localAIProcess.stderr.on('data', (data) => {
+            appendTerminalOutput(data.toString(), 'stderr');
+        });
+        
+        // 监听进程退出
+        localAIProcess.on('close', (code) => {
+            localAIRunning = false;
+            updateLocalAIButton(false);
+            appendTerminalOutput(`进程已退出，退出码: ${code}`, 'system');
+            localAIProcess = null;
+        });
+        
+        // 监听错误
+        localAIProcess.on('error', (err) => {
+            localAIRunning = false;
+            updateLocalAIButton(false);
+            appendTerminalOutput(`启动失败: ${err.message}`, 'stderr');
+            localAIProcess = null;
+            showNotification('启动失败: ' + err.message, 'error');
+        });
+        
+        appendTerminalOutput('服务启动中，请稍候...', 'system');
+        showNotification('端侧 AI 服务启动中...', 'info');
+        
+    } catch (error) {
+        console.error('启动端侧 AI 失败:', error);
+        appendTerminalOutput(`启动失败: ${error.message}`, 'stderr');
+        showNotification('启动失败: ' + error.message, 'error');
+        updateLocalAIButton(false);
+    }
+}
+
+// 停止端侧 AI
+function stopLocalAI() {
+    if (!localAIProcess) {
+        showNotification('服务未运行', 'warning');
+        return;
+    }
+    
+    try {
+        // Windows 下使用 taskkill 强制终止进程树
+        const { exec } = require('child_process');
+        exec(`taskkill /pid ${localAIProcess.pid} /T /F`, (error) => {
+            if (error) {
+                console.error('停止进程失败:', error);
+                // 尝试直接 kill
+                localAIProcess.kill('SIGTERM');
+            }
+        });
+        
+        localAIRunning = false;
+        updateLocalAIButton(false);
+        appendTerminalOutput('\n服务已停止\n', 'system');
+        showNotification('端侧 AI 服务已停止', 'success');
+        localAIProcess = null;
+        
+    } catch (error) {
+        console.error('停止端侧 AI 失败:', error);
+        showNotification('停止失败: ' + error.message, 'error');
+    }
+}
+
+// 更新按钮状态
+function updateLocalAIButton(running) {
+    const btn = document.getElementById('localAIBtn');
+    const btnText = document.getElementById('localAIBtnText');
+    const btnIcon = document.getElementById('localAIBtnIcon');
+    
+    if (!btn || !btnText || !btnIcon) return;
+    
+    if (running) {
+        btn.classList.add('running');
+        btnText.textContent = '停止';
+        btnIcon.innerHTML = '<rect x="6" y="6" width="12" height="12"></rect>';
+    } else {
+        btn.classList.remove('running');
+        btnText.textContent = '启动';
+        btnIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
+    }
+}
+
+// 追加终端输出
+function appendTerminalOutput(text, type = 'stdout') {
+    const terminalOutput = document.getElementById('terminalOutput');
+    if (!terminalOutput) return;
+    
+    // 移除占位符
+    const placeholder = terminalOutput.querySelector('.terminal-placeholder');
+    if (placeholder) {
+        placeholder.remove();
+    }
+    
+    // 添加新行
+    const lines = text.split('\n');
+    lines.forEach(line => {
+        if (line.trim()) {
+            const lineElement = document.createElement('span');
+            lineElement.className = `terminal-line ${type}`;
+            lineElement.textContent = line;
+            terminalOutput.appendChild(lineElement);
+            terminalOutput.appendChild(document.createTextNode('\n'));
+        }
+    });
+    
+    // 自动滚动到底部
+    terminalOutput.scrollTop = terminalOutput.scrollHeight;
+}
+
+// 导出函数
+window.toggleLocalAI = toggleLocalAI;
+window.startLocalAI = startLocalAI;
+window.stopLocalAI = stopLocalAI;

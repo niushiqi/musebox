@@ -551,6 +551,8 @@ let pluginState = {
 // Eagle插件生命周期事件
 eagle.onPluginCreate((plugin) => {
     console.log('插件已创建:', plugin);
+    // 将 plugin 对象存到全局，供其他模块使用
+    window.eaglePlugin = plugin;
     initializePlugin();
 });
 

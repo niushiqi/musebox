@@ -1277,3 +1277,82 @@ body {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
+
+/* 端侧 AI */
+.btn-local-ai {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #10b981;
+    color: white;
+    margin-bottom: 14px;
+}
+
+.btn-local-ai:hover {
+    background: #059669;
+}
+
+.btn-local-ai.running {
+    background: #ef4444;
+}
+
+.btn-local-ai.running:hover {
+    background: #dc2626;
+}
+
+.local-ai-terminal {
+    background: #0f172a;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #1e293b;
+}
+
+.terminal-output {
+    padding: 12px 14px;
+    height: 200px;
+    overflow-y: auto;
+    font-family: 'Monaco', 'Menlo', 'Consolas', 'Ubuntu Mono', monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #e2e8f0;
+    word-break: break-all;
+    white-space: pre-wrap;
+}
+
+.terminal-output::-webkit-scrollbar {
+    width: 6px;
+}
+
+.terminal-output::-webkit-scrollbar-track {
+    background: #1e293b;
+}
+
+.terminal-output::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 3px;
+}
+
+.terminal-placeholder {
+    color: #475569;
+    font-style: italic;
+}
+
+.terminal-line {
+    display: block;
+    margin-bottom: 2px;
+}
+
+.terminal-line.stderr {
+    color: #fca5a5;
+}
+
+.terminal-line.system {
+    color: #6ee7b7;
+}

@@ -289,10 +289,22 @@
 
             <!-- 设置页面 -->
             <div id="settings" class="tab-content">
-                <!-- <div class="page-header">
-                    <h2>设置</h2>
-                    <p class="page-desc">配置 AI 服务和处理偏好</p>
-                </div> -->
+
+                <!-- 端侧 AI -->
+                <div class="settings-section" id="localAISection">
+                    <h3 class="section-title">端侧 AI</h3>
+                    <button class="btn btn-local-ai" id="localAIBtn" onclick="toggleLocalAI()">
+                        <svg id="localAIBtnIcon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                        <span id="localAIBtnText">启动</span>
+                    </button>
+                    <div class="local-ai-terminal" id="localAITerminal">
+                        <div class="terminal-output" id="terminalOutput">
+                            <span class="terminal-placeholder">等待启动...</span>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- API 配置 -->
                 <div class="settings-section" id="aiConfigSection">
