@@ -2018,6 +2018,211 @@ async function addAnnotationToImage(imageData, annotation) {
     }
 }
 
+// ==================== 标签生成 ====================
+
+// 调用本地模型生成标签
+async function generateImageTags(imageData) {
+    try {
+        console.log('开始生成图片标签:', imageData.name);
+
+        const currentProvider = 'ollama';
+        const provider = aiProviders[currentProvider];
+        const model = pluginConfig.models[currentProvider] || 'qwen2.5-vl-3b';
+
+        const imageBase64 = await getImageBase64(imageData);
+
+        // 使用标签模板
+        const activeTemplate = getActiveTemplate('tag');
+        if (!activeTemplate || !activeTemplate.prompt) {
+            throw new Error('请先在模板管理中激活一个标签模板');
+        }
+
+        const origProvider = pluginConfig.provider;
+        const origKey = pluginConfig.apiKeys['ollama'];
+        pluginConfig.provider = 'ollama';
+        pluginConfig.apiKeys['ollama'] = 'local';
+
+        // 构建请求（复用 buildAPIRequest，但 prompt 来自标签模板）
+        const mimeType = 'image/jpeg';
+        const requestData = {
+            model: model,
+            messages: [{
+                role: 'user',
+                content: [
+                    { type: 'text', text: activeTemplate.prompt },
+                    { type: 'image_url', image_url: { url: `data:${mimeType};base64,${imageBase64}` } }
+                ]
+            }],
+            max_tokens: pluginConfig.maxTokens
+        };
+        const headers = buildAPIHeaders(provider);
+        const apiUrl = pluginConfig.apiUrls['ollama'];
+
+        pluginConfig.provider = origProvider;
+        pluginConfig.apiKeys['ollama'] = origKey;
+
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(requestData)
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`本地模型请求失败: ${response.status} - ${errorText}`);
+        }
+
+        const result = await response.json();
+        const parseResult = parseAPIResponse(provider, result);
+        const rawText = parseResult.content;
+
+        if (!rawText || rawText.trim() === '') {
+            throw new Error('模型返回的标签内容为空');
+        }
+
+        // 解析标签：支持逗号、换行、#号分隔
+        const tags = rawText
+            .split(/[,，\n#]+/)
+            .map(t => t.trim().replace(/^#+/, '').trim())
+            .filter(t => t.length > 0 && t.length <= 50);
+
+        console.log('生成的标签:', tags);
+
+        if (parseResult.tokenUsage) {
+            updateTokenUsage(parseResult.tokenUsage, provider);
+        }
+
+        return tags;
+
+    } catch (error) {
+        console.error('生成标签时出错:', error);
+        throw error;
+    }
+}
+
+// 将标签写入图片
+async function addTagsToImage(imageData, tags) {
+    try {
+        console.log('添加标签到图片:', imageData.name, tags);
+
+        if (!Array.isArray(tags) || tags.length === 0) return false;
+
+        if (imageData && typeof imageData.save === 'function') {
+            // 合并已有标签（去重）
+            const existing = Array.isArray(imageData.tags) ? imageData.tags : [];
+            const merged = Array.from(new Set([...existing, ...tags]));
+            imageData.tags = merged;
+            await imageData.save();
+            console.log('标签已保存:', merged);
+            return true;
+        }
+
+        return false;
+    } catch (error) {
+        console.error('添加标签时出错:', error);
+        throw error;
+    }
+}
+
+// ==================== 重命名 ====================
+
+// 调用本地模型生成新文件名
+async function generateImageRename(imageData) {
+    try {
+        console.log('开始生成图片新名称:', imageData.name);
+
+        const currentProvider = 'ollama';
+        const provider = aiProviders[currentProvider];
+        const model = pluginConfig.models[currentProvider] || 'qwen2.5-vl-3b';
+
+        const imageBase64 = await getImageBase64(imageData);
+
+        const activeTemplate = getActiveTemplate('rename');
+        if (!activeTemplate || !activeTemplate.prompt) {
+            throw new Error('请先在模板管理中激活一个重命名模板');
+        }
+
+        const origProvider = pluginConfig.provider;
+        const origKey = pluginConfig.apiKeys['ollama'];
+        pluginConfig.provider = 'ollama';
+        pluginConfig.apiKeys['ollama'] = 'local';
+
+        const mimeType = 'image/jpeg';
+        const requestData = {
+            model: model,
+            messages: [{
+                role: 'user',
+                content: [
+                    { type: 'text', text: activeTemplate.prompt },
+                    { type: 'image_url', image_url: { url: `data:${mimeType};base64,${imageBase64}` } }
+                ]
+            }],
+            max_tokens: 100
+        };
+        const headers = buildAPIHeaders(provider);
+        const apiUrl = pluginConfig.apiUrls['ollama'];
+
+        pluginConfig.provider = origProvider;
+        pluginConfig.apiKeys['ollama'] = origKey;
+
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(requestData)
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`本地模型请求失败: ${response.status} - ${errorText}`);
+        }
+
+        const result = await response.json();
+        const parseResult = parseAPIResponse(provider, result);
+        let newName = parseResult.content.trim();
+
+        if (!newName) throw new Error('模型返回的文件名为空');
+
+        // 清理文件名：去掉非法字符，截断过长内容
+        newName = newName
+            .replace(/[\\/:*?"<>|]/g, '_')
+            .replace(/\s+/g, '_')
+            .slice(0, 100);
+
+        console.log('生成的新名称:', newName);
+
+        if (parseResult.tokenUsage) {
+            updateTokenUsage(parseResult.tokenUsage, provider);
+        }
+
+        return newName;
+
+    } catch (error) {
+        console.error('生成重命名时出错:', error);
+        throw error;
+    }
+}
+
+// 将新名称写入图片
+async function renameImage(imageData, newName) {
+    try {
+        console.log('重命名图片:', imageData.name, '->', newName);
+
+        if (!newName) return false;
+
+        if (imageData && typeof imageData.save === 'function') {
+            imageData.name = newName;
+            await imageData.save();
+            console.log('重命名已保存:', newName);
+            return true;
+        }
+
+        return false;
+    } catch (error) {
+        console.error('重命名图片时出错:', error);
+        throw error;
+    }
+}
+
 // 手动为选中图片添加注释
 async function addAnnotationToSelectedImages() {
     // 记录用户操作日志
@@ -2612,6 +2817,10 @@ window.eagleAutoAnnotation = {
     getAPIUrl,             // 导出API URL获取函数
     generateImageAnnotation, // 导出图片注释生成函数
     addAnnotationToImage,   // 导出添加注释函数
+    generateImageTags,      // 导出标签生成函数
+    addTagsToImage,         // 导出标签写入函数
+    generateImageRename,    // 导出重命名生成函数
+    renameImage,            // 导出重命名写入函数
     pluginConfig,
     pluginState,
     aiProviders,
@@ -2846,7 +3055,7 @@ const DEFAULT_TEMPLATES = [
         type: 'rename',
         name: '默认重命名模板',
         isDefault: true,
-        prompt: '你是一位专业的数字资产管理员，你的任务是为 Eagle 素材库中的图片进行重命名，以实现高效的搜索和分类。\n\n请严格按照以下格式为我提供的图片生成内容：\n使用中文进行命名\n不含扩展名\n\n---\n\n例子：\n\n一二布布大电影.png'
+        prompt: '你是一位专业的数字资产管理员，你的任务是为 Eagle 素材库中的图片进行重命名，以实现高效的搜索和分类。\n\n请严格按照以下格式为我提供的图片生成内容：\n使用中文进行命名\n不含扩展名\n\n---\n\n例子：\n\n一二布布大电影'
     }
 ];
 

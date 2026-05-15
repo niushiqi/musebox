@@ -430,7 +430,11 @@ async function processImageWithAI(image, options) {
         throw new Error('插件核心模块未加载');
     }
     
-    const { generateImageAnnotation, addAnnotationToImage } = window.eagleAutoAnnotation;
+    const {
+        generateImageAnnotation, addAnnotationToImage,
+        generateImageTags, addTagsToImage,
+        generateImageRename, renameImage
+    } = window.eagleAutoAnnotation;
     
     // 生成注释
     if (options.annotation) {
@@ -439,8 +443,22 @@ async function processImageWithAI(image, options) {
             await addAnnotationToImage(image, annotation);
         }
     }
-    
-    // TODO: 实现标签和重命名功能
+
+    // 生成标签
+    if (options.tag) {
+        const tags = await generateImageTags(image);
+        if (tags && tags.length > 0) {
+            await addTagsToImage(image, tags);
+        }
+    }
+
+    // 重命名
+    if (options.rename) {
+        const newName = await generateImageRename(image);
+        if (newName) {
+            await renameImage(image, newName);
+        }
+    }
 }
 
 // 更新图片状态
