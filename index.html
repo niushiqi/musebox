@@ -32,7 +32,7 @@
                 <div id="apiWarning" class="api-warning" style="display: none;">
                     <div class="warning-content">
                         <svg width="16" height="16" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M24 44C29.5228 44 34.5228 41.7614 38.1421 38.1421C41.7614 34.5228 44 29.5228 44 24C44 18.4772 41.7614 13.4772 38.1421 9.85786C34.5228 6.23858 29.5228 4 24 4C18.4772 4 13.4772 6.23858 9.85786 9.85786C6.23858 13.4772 4 18.4772 4 24C4 29.5228 6.23858 34.5228 9.85786 38.1421C13.4772 41.7614 18.4772 44 24 44Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path fill-rule="evenodd" clip-rule="evenodd" d="M24 37C25.3807 37 26.5 35.8807 26.5 34.5C26.5 33.1193 25.3807 32 24 32C22.6193 32 21.5 33.1193 21.5 34.5C21.5 35.8807 22.6193 37 24 37Z" fill="currentColor"/><path d="M24 12V28" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        <span>温馨提示：检测到您尚未接入大模型，接入后才可进行图片处理。 <a href="javascript:void(0)" onclick="navigateToAPISettings()" style="color: inherit; text-decoration: underline;">前往配置大模型</a></span>
+                        <span>温馨提示：本地模型尚未安装，安装后才可进行图片处理。 <a href="javascript:void(0)" onclick="switchTab('settings')" style="color: inherit; text-decoration: underline;">前往安装模型</a></span>
                     </div>
                     <button class="warning-close" onclick="document.getElementById('apiWarning').style.display='none'">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -290,32 +290,38 @@
             <!-- 设置页面 -->
             <div id="settings" class="tab-content">
 
-                <!-- 端侧 AI -->
+                <!-- 本地模型 -->
                 <div class="settings-section" id="localAISection">
-                    <h3 class="section-title">端侧 AI</h3>
+                    <h3 class="section-title">本地模型</h3>
 
-                    <!-- 下载按钮 -->
-                    <button class="btn btn-download-model" id="downloadModelBtn" onclick="handleDownloadModelClick()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="7 10 12 15 17 10"></polyline>
-                            <line x1="12" y1="15" x2="12" y2="3"></line>
-                        </svg>
-                        <span id="downloadModelBtnText">下载模型</span>
-                    </button>
+                    <!-- 模型行 -->
+                    <div class="lm-model-row" id="lmModelRow">
+                        <div class="lm-model-left">
+                            <span class="lm-model-name">qwen2.5vl3b</span>
+                            <span class="lm-tag lm-tag-active" id="lmTagInstalled" style="display:none;">使用中</span>
+                            <span class="lm-tag lm-tag-status" id="lmTagStatus" style="display:none;"></span>
+                        </div>
+                        <div class="lm-model-right">
+                            <button class="btn btn-download-model" id="downloadModelBtn" onclick="handleDownloadModelClick()">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                <span id="downloadModelBtnText">下载</span>
+                            </button>
+                            <button class="btn btn-view-status" id="viewStatusBtn" onclick="toggleModelDetail()" style="display:none;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                查看状态
+                            </button>
+                        </div>
+                    </div>
 
                     <!-- 下载/解压进度区域 -->
                     <div class="model-progress-area" id="modelProgressArea" style="display:none;">
-                        <!-- 解压警告 -->
                         <div class="unzip-warning" id="unzipWarning" style="display:none;">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
                             解压中，请勿关闭插件
                         </div>
-                        <!-- 进度条 -->
                         <div class="model-progress-bar-wrap">
                             <div class="model-progress-bar-fill" id="modelProgressFill" style="width:0%"></div>
                         </div>
-                        <!-- 进度信息 -->
                         <div class="model-progress-info">
                             <span id="modelProgressLabel">准备中...</span>
                             <span id="modelProgressPercent">0%</span>
@@ -323,24 +329,64 @@
                         <div class="model-progress-meta" id="modelProgressMeta"></div>
                     </div>
 
-                    <!-- 启动按钮 -->
-                    <button class="btn btn-local-ai" id="localAIBtn" onclick="toggleLocalAI()" disabled>
-                        <svg id="localAIBtnIcon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                        </svg>
-                        <span id="localAIBtnText">启动</span>
-                    </button>
-
-                    <!-- 终端输出 -->
-                    <div class="local-ai-terminal" id="localAITerminal">
-                        <div class="terminal-output" id="terminalOutput">
-                            <span class="terminal-placeholder">等待启动...</span>
+                    <!-- 模型详情面板（安装后展开） -->
+                    <div class="lm-detail-panel" id="lmDetailPanel" style="display:none;">
+                        <div class="lm-detail-grid">
+                            <div class="lm-detail-item">
+                                <span class="lm-detail-label">模型名称</span>
+                                <span class="lm-detail-value">qwen2.5vl3b</span>
+                            </div>
+                            <div class="lm-detail-item">
+                                <span class="lm-detail-label">模型大小</span>
+                                <span class="lm-detail-value" id="lmDetailSize">计算中...</span>
+                            </div>
+                            <div class="lm-detail-item">
+                                <span class="lm-detail-label">安装时间</span>
+                                <span class="lm-detail-value" id="lmDetailInstallTime">--</span>
+                            </div>
+                            <div class="lm-detail-item">
+                                <span class="lm-detail-label">安装路径</span>
+                                <span class="lm-detail-value lm-detail-path" id="lmDetailPath">--</span>
+                            </div>
+                            <div class="lm-detail-item">
+                                <span class="lm-detail-label">运行状态</span>
+                                <span class="lm-detail-value" id="lmDetailRunStatus">未启动</span>
+                            </div>
+                            <div class="lm-detail-item">
+                                <span class="lm-detail-label">本次运行时长</span>
+                                <span class="lm-detail-value" id="lmDetailUptime">--</span>
+                            </div>
+                            <div class="lm-detail-item lm-detail-full">
+                                <span class="lm-detail-label">状态说明</span>
+                                <span class="lm-detail-value lm-detail-desc" id="lmDetailDesc">模型尚未启动，点击下方启动按钮开始运行。</span>
+                            </div>
                         </div>
+
+                        <!-- 运行日志 -->
+                        <div class="lm-log-section">
+                            <div class="lm-log-header" onclick="toggleTerminal()">
+                                <span>运行日志</span>
+                                <svg id="lmLogArrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                            </div>
+                            <div class="local-ai-terminal" id="localAITerminal" style="display:none;">
+                                <div class="terminal-output" id="terminalOutput">
+                                    <span class="terminal-placeholder">等待启动...</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 启动/停止按钮 -->
+                        <button class="btn btn-local-ai" id="localAIBtn" onclick="toggleLocalAI()">
+                            <svg id="localAIBtnIcon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                            </svg>
+                            <span id="localAIBtnText">启动</span>
+                        </button>
                     </div>
                 </div>
 
-                <!-- API 配置 -->
-                <div class="settings-section" id="aiConfigSection">
+                <!-- API 配置（隐藏，逻辑保留） -->
+                <div class="settings-section" id="aiConfigSection" style="display:none;">
                     <h3 class="section-title">大模型</h3>
                     
                     <div class="form-group">

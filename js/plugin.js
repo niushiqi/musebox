@@ -346,7 +346,7 @@ const pluginConfig = {
     },
     apiUrls: { // 每个服务商的API地址
         volcano: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
-        ollama: 'http://localhost:8000/api/v3/chat/completions',
+        ollama: 'http://localhost:8910/v1/chat/completions',
         alibaba: 'https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
         google: 'https://generativelanguage.googleapis.com/v1beta/models',
         zhipu: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
@@ -354,7 +354,7 @@ const pluginConfig = {
     },
     models: { // 每个服务商的模型
         volcano: 'doubao-seed-1-6-250615',
-        ollama: 'qwen2.5-vl-3b',
+        ollama: 'qwen2.5vl3b',
         alibaba: 'qwen-vl-max-latest',
         google: 'gemini-2.5-flash',
         zhipu: 'GLM-4.5V',
@@ -376,12 +376,12 @@ const pluginConfig = {
 const aiProviders = {
     ollama: {
         name: '本机部署模型（免费·本地算力）',
-        baseUrl: 'http://localhost:8000/api/v3/chat/completions',
+        baseUrl: 'http://localhost:8910/v1/chat/completions',
         models: [
             { 
-                value: 'qwen2.5-vl-3b', 
-                label: 'Qwen2.5-VL-3B', 
-                apiName: 'qwen2.5-vl-3b',
+                value: 'qwen2.5vl3b', 
+                label: 'qwen2.5vl3b', 
+                apiName: 'qwen2.5vl3b',
                 description: '本地部署, 轻量快速'
             },
             { 
@@ -1381,51 +1381,35 @@ async function generateImageAnnotation(imageData) {
     try {
         console.log('开始生成图片注释:', imageData.name);
         
-        // 检查API配置
-        const currentProvider = pluginConfig.provider;
-        const apiKey = pluginConfig.apiKeys[currentProvider];
-        if (!apiKey) {
-            throw new Error(`${aiProviders[currentProvider]?.name || '当前服务商'}的API密钥未配置`);
-        }
-        
+        // 写死使用本地模型（ollama / qwen2.5vl3b'）
+        const currentProvider = 'ollama';
+        const provider = aiProviders[currentProvider];
+        const model = pluginConfig.models[currentProvider] || 'qwen2.5vl3b';
+        const apiKey = pluginConfig.apiKeys[currentProvider] || 'local'; // 本地模型不需要真实 key
+
         // 获取图片数据
         console.log('获取图片Base64数据...');
         const imageBase64 = await getImageBase64(imageData);
         console.log('图片Base64长度:', imageBase64.length);
         
-        // 获取当前服务商配置
-        const provider = aiProviders[pluginConfig.provider];
-        if (!provider) {
-            throw new Error(`不支持的服务商: ${pluginConfig.provider}`);
-        }
-        
-        // 获取当前服务商的模型
-        const model = pluginConfig.models[currentProvider];
-        
         console.log('使用服务商:', provider.name);
         console.log('使用模型:', model);
         
-        // 构建请求
+        // 构建请求（临时覆盖 provider 的 apiKey 供 buildAPIHeaders 使用）
+        const origProvider = pluginConfig.provider;
+        const origKey = pluginConfig.apiKeys['ollama'];
+        pluginConfig.provider = 'ollama';
+        pluginConfig.apiKeys['ollama'] = apiKey;
+
         const requestData = buildAPIRequest(provider, imageBase64, model);
         const headers = buildAPIHeaders(provider);
-        const apiUrl = getAPIUrl(provider);
+        const apiUrl = pluginConfig.apiUrls['ollama'];
+
+        // 还原
+        pluginConfig.provider = origProvider;
+        pluginConfig.apiKeys['ollama'] = origKey;
         
         console.log('API URL:', apiUrl);
-        console.log('请求头已设置');
-        console.log('请求数据已构建');
-        
-        // 验证URL格式
-        try {
-            new URL(apiUrl);
-            console.log('URL格式验证通过');
-        } catch (urlError) {
-            console.error('URL格式错误:', urlError);
-            throw new Error(`API URL格式错误: ${apiUrl}`);
-        }
-        
-        // 调用大模型API
-        console.log('发送API请求...');
-        console.log('请求URL:', apiUrl);
         
         const response = await fetch(apiUrl, {
             method: 'POST',
@@ -1434,75 +1418,24 @@ async function generateImageAnnotation(imageData) {
         });
         
         console.log('API响应状态:', response.status, response.statusText);
-        console.log('响应头:', Object.fromEntries(response.headers.entries()));
         
         if (!response.ok) {
             const errorText = await response.text();
             console.error('API错误响应:', errorText);
-            
-            let errorMessage = `API请求失败: ${response.status} ${response.statusText}`;
-            try {
-                const errorJson = JSON.parse(errorText);
-                
-                // 火山方舟特定错误处理
-                if (pluginConfig.provider === 'volcano') {
-                    if (errorJson.error && errorJson.error.message) {
-                        errorMessage += ` - ${errorJson.error.message}`;
-                    }
-                    if (errorJson.error && errorJson.error.code) {
-                        errorMessage += ` (错误码: ${errorJson.error.code})`;
-                        
-                        // 常见错误的中文提示
-                        switch (errorJson.error.code) {
-                            case 'invalid_api_key':
-                                errorMessage += ' - API密钥无效，请检查您的API Key';
-                                break;
-                            case 'insufficient_quota':
-                                errorMessage += ' - 余额不足，请充值或检查账户余额';
-                                break;
-                            case 'model_not_found':
-                                errorMessage += ' - 模型不存在，请检查endpoint ID是否正确';
-                                break;
-                            case 'rate_limit_exceeded':
-                                errorMessage += ' - 请求过于频繁，请稍后再试';
-                                break;
-                        }
-                    }
-                } else {
-                    // 其他服务商的错误处理
-                    if (errorJson.message) {
-                        errorMessage += ` - ${errorJson.message}`;
-                    }
-                    if (errorJson.code) {
-                        errorMessage += ` (错误码: ${errorJson.code})`;
-                    }
-                }
-                
-                if (errorJson.request_id) {
-                    errorMessage += ` (请求ID: ${errorJson.request_id})`;
-                }
-            } catch (e) {
-                errorMessage += ` - ${errorText}`;
-            }
-            
-            throw new Error(errorMessage);
+            throw new Error(`本地模型请求失败: ${response.status} ${response.statusText} - ${errorText}`);
         }
         
         const result = await response.json();
-        console.log('API响应已接收');
-        
         const parseResult = parseAPIResponse(provider, result);
         const annotation = parseResult.content;
         const tokenUsage = parseResult.tokenUsage;
         
         console.log('解析后的注释:', annotation);
-        console.log('Token使用情况:', tokenUsage);
         
         if (!annotation || annotation.trim() === '') {
-            throw new Error('API返回的注释为空或无效');
+            throw new Error('本地模型返回的注释为空或无效');
         }
         
-        // 更新token统计
         if (tokenUsage) {
             updateTokenUsage(tokenUsage, provider);
         }

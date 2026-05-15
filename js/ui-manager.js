@@ -55,24 +55,13 @@ function initializeUI() {
 }
 
 // 检查 API 配置状态
+// 检查 API 配置状态（现在改为检查本地模型是否已安装）
 function checkAPIConfigurationUI() {
-    if (!window.eagleAutoAnnotation) return;
-    
-    const { pluginConfig } = window.eagleAutoAnnotation;
-    const currentProvider = pluginConfig.provider;
-    const apiKey = pluginConfig.apiKeys[currentProvider];
-    
     const apiWarning = document.getElementById('apiWarning');
-    const imageStatusCard = document.getElementById('imageStatusCard');
-    const controlPanel = document.querySelector('.control-panel');
-    
-    if (!apiKey) {
-        // 显示警告
-        if (apiWarning) apiWarning.style.display = 'flex';
-    } else {
-        // 隐藏警告
-        if (apiWarning) apiWarning.style.display = 'none';
-    }
+    if (!apiWarning) return;
+    // 本地模型未安装时显示提示
+    const modelInstalled = typeof checkModelExists === 'function' && checkModelExists();
+    apiWarning.style.display = modelInstalled ? 'none' : 'flex';
 }
 
 // 标签页切换
@@ -321,18 +310,14 @@ async function handleStartProcessing() {
         return;
     }
     
-    // 检查API配置
     if (!window.eagleAutoAnnotation) {
         showNotification('插件核心模块未加载', 'error');
         return;
     }
-    
-    const { pluginConfig } = window.eagleAutoAnnotation;
-    const currentProvider = pluginConfig.provider;
-    const apiKey = pluginConfig.apiKeys[currentProvider];
-    
-    if (!apiKey) {
-        showNotification('请先到设置页面配置大模型', 'warning');
+
+    // 检查本地模型是否已安装
+    if (typeof checkModelExists === 'function' && !checkModelExists()) {
+        showNotification('请先到设置页面安装本地模型', 'warning');
         return;
     }
     
@@ -445,15 +430,7 @@ async function processImageWithAI(image, options) {
         throw new Error('插件核心模块未加载');
     }
     
-    const { pluginConfig, generateImageAnnotation, addAnnotationToImage } = window.eagleAutoAnnotation;
-    
-    // 检查 API 配置
-    const currentProvider = pluginConfig.provider;
-    const apiKey = pluginConfig.apiKeys[currentProvider];
-    
-    if (!apiKey) {
-        throw new Error('API 密钥未配置');
-    }
+    const { generateImageAnnotation, addAnnotationToImage } = window.eagleAutoAnnotation;
     
     // 生成注释
     if (options.annotation) {
@@ -464,7 +441,6 @@ async function processImageWithAI(image, options) {
     }
     
     // TODO: 实现标签和重命名功能
-    // 这些功能需要在 plugin.js 中添加相应的函数
 }
 
 // 更新图片状态
@@ -948,27 +924,34 @@ async function refreshImageListWithAnimation(button) {
 window.refreshImageListWithAnimation = refreshImageListWithAnimation;
 
 
-// ==================== 端侧 AI 管理 ====================
+// ==================== 本地模型管理 ====================
 
-// 端侧 AI 进程状态
+// 进程状态
 let localAIProcess = null;
 let localAIRunning = false;
+let localAIStartTime = null;       // 本次启动时间
+let localAIUptimeTimer = null;     // 运行时长定时器
+let localAIRunStatus = 'idle';     // idle | starting | running | failed
+let localAIFailReason = '';        // 失败原因
+let localAIDetailVisible = false;  // 详情面板是否展开
+let localAITerminalVisible = false;// 日志是否展开
 
 // 下载状态
 const dlState = {
     status: 'idle',       // idle | downloading | paused | unzipping | done | unzip_failed
-    downloaded: 0,        // 已下载字节数
-    total: 0,             // 文件总字节数
-    startTime: 0,         // 本段下载开始时间
-    startBytes: 0,        // 本段开始时的已下载字节数
-    request: null,        // 当前 http 请求对象
-    fileStream: null,     // 写入流
+    downloaded: 0,
+    total: 0,
+    startTime: 0,
+    startBytes: 0,
+    request: null,
+    fileStream: null,
 };
 
 const MODEL_URL = 'https://www.aidevhome.com/data/adh2/models/suggested/qwen2.5vl3b-8380-2.42.zip';
 const MODEL_ZIP_NAME = 'qwen2.5vl3b-8380-2.42.zip';
 const MODEL_DIR_NAME = 'qwen2.5vl3b';
-const PROGRESS_KEY = 'localAI_dl_progress'; // localStorage key 保存已下载字节数
+const PROGRESS_KEY = 'localAI_dl_progress';
+const INSTALL_TIME_KEY = 'localAI_install_time';
 
 // ---- 工具函数 ----
 function getPluginPath() {
@@ -987,6 +970,14 @@ function formatSeconds(sec) {
     if (sec < 60) return Math.ceil(sec) + ' 秒';
     if (sec < 3600) return Math.ceil(sec / 60) + ' 分钟';
     return (sec / 3600).toFixed(1) + ' 小时';
+}
+
+function formatDuration(ms) {
+    const s = Math.floor(ms / 1000);
+    if (s < 60) return s + ' 秒';
+    const m = Math.floor(s / 60);
+    if (m < 60) return m + ' 分 ' + (s % 60) + ' 秒';
+    return Math.floor(m / 60) + ' 时 ' + (m % 60) + ' 分';
 }
 
 // ---- 进度 UI ----
@@ -1018,47 +1009,190 @@ function showUnzipWarning(show) {
 }
 
 // ---- 下载按钮状态 ----
-// state: 'download' | 'pause' | 'resume' | 'unzipping' | 'delete'
 function setDownloadBtn(state) {
     const btn = document.getElementById('downloadModelBtn');
-    const txt = document.getElementById('downloadModelBtnText');
-    if (!btn || !txt) return;
+    if (!btn) return;
 
     btn.disabled = false;
     btn.classList.remove('delete-mode');
 
     const icons = {
-        download: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`,
-        pause:    `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>`,
-        resume:   `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`,
-        unzipping:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"></path></svg>`,
-        delete:   `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>`,
-        reUnzip:  `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"></path></svg>`,
+        download: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`,
+        pause:    `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>`,
+        resume:   `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`,
+        unzipping:`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"></path></svg>`,
+        delete:   `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>`,
+        reUnzip:  `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"></path></svg>`,
     };
 
     const labels = {
-        download: '下载模型',
-        pause:    '暂停下载',
-        resume:   '继续下载',
+        download: '下载',
+        pause:    '暂停',
+        resume:   '继续',
         unzipping:'解压中',
-        delete:   '删除模型',
+        delete:   '删除',
         reUnzip:  '重新解压',
     };
 
     btn.innerHTML = (icons[state] || '') + `<span id="downloadModelBtnText">${labels[state] || state}</span>`;
 
-    if (state === 'unzipping') {
-        btn.disabled = true;
-    }
-    if (state === 'delete') {
-        btn.classList.add('delete-mode');
-    }
+    if (state === 'unzipping') btn.disabled = true;
+    if (state === 'delete') btn.classList.add('delete-mode');
 }
 
-// ---- 启动按钮可用性 ----
-function setLaunchBtnEnabled(enabled) {
-    const btn = document.getElementById('localAIBtn');
-    if (btn) btn.disabled = !enabled;
+// ---- 查看状态按钮显隐 ----
+function setViewStatusBtnVisible(show) {
+    const btn = document.getElementById('viewStatusBtn');
+    if (btn) btn.style.display = show ? 'inline-flex' : 'none';
+}
+
+// ---- 已安装 tag ----
+function setInstalledTagVisible(show) {
+    const el = document.getElementById('lmTagInstalled');
+    if (el) el.style.display = show ? 'inline-flex' : 'none';
+}
+
+// ---- 运行状态 tag ----
+// status: 'idle'|'starting'|'running'|'failed'
+function setRunStatusTag(status, failReason) {
+    const el = document.getElementById('lmTagStatus');
+    if (!el) return;
+
+    const map = {
+        idle:     { text: '未启动', cls: '' },
+        starting: { text: '正在启动', cls: '' },
+        running:  { text: '运行中', cls: '' },
+        failed:   { text: '运行失败', cls: 'failed' },
+    };
+
+    const info = map[status] || map.idle;
+    el.textContent = info.text;
+    el.className = 'lm-tag lm-tag-status' + (info.cls ? ' ' + info.cls : '');
+
+    // idle 也显示，只是样式不同
+    el.style.display = 'inline-flex';
+}
+
+// ---- 详情面板数据更新 ----
+function updateDetailPanel() {
+    const path = require('path');
+    const fs = require('fs');
+    const pluginPath = getPluginPath();
+    const modelDir = path.join(pluginPath, MODEL_DIR_NAME);
+
+    // 安装路径（可点击打开文件夹）
+    const pathEl = document.getElementById('lmDetailPath');
+    if (pathEl) {
+        pathEl.textContent = modelDir;
+        pathEl.style.cursor = 'pointer';
+        pathEl.title = '点击打开文件夹';
+        pathEl.onclick = () => {
+            try {
+                const { exec } = require('child_process');
+                exec(`explorer "${modelDir}"`);
+            } catch (e) {
+                console.warn('打开文件夹失败:', e);
+            }
+        };
+    }
+
+    // 模型大小
+    const sizeEl = document.getElementById('lmDetailSize');
+    if (sizeEl) {
+        try {
+            let total = 0;
+            const walk = (dir) => {
+                fs.readdirSync(dir).forEach(f => {
+                    const fp = path.join(dir, f);
+                    const st = fs.statSync(fp);
+                    if (st.isDirectory()) walk(fp);
+                    else total += st.size;
+                });
+            };
+            walk(modelDir);
+            sizeEl.textContent = formatBytes(total);
+        } catch (e) {
+            sizeEl.textContent = '--';
+        }
+    }
+
+    // 安装时间
+    const installEl = document.getElementById('lmDetailInstallTime');
+    if (installEl) {
+        const t = localStorage.getItem(INSTALL_TIME_KEY);
+        installEl.textContent = t ? new Date(t).toLocaleString('zh-CN') : '--';
+    }
+
+    // 运行状态文字
+    updateDetailRunStatus();
+}
+
+function updateDetailRunStatus() {
+    const statusEl = document.getElementById('lmDetailRunStatus');
+    const descEl   = document.getElementById('lmDetailDesc');
+
+    const statusText = {
+        idle:     '未启动',
+        starting: '正在启动',
+        running:  '运行中',
+        failed:   '运行失败',
+    };
+
+    const descText = {
+        idle:     '模型尚未启动，点击下方启动按钮开始运行。',
+        starting: '模型正在初始化，等待服务就绪（检测到 API 地址后即为运行中）。',
+        running:  '模型已就绪，正在提供本地推理服务。',
+        failed:   `模型启动或运行过程中发生错误。${localAIFailReason ? '原因：' + localAIFailReason : '请查看运行日志了解详情。'}`,
+    };
+
+    if (statusEl) statusEl.textContent = statusText[localAIRunStatus] || '--';
+    if (descEl)   descEl.textContent   = descText[localAIRunStatus]   || '';
+}
+
+// ---- 运行时长定时器 ----
+function startUptimeTimer() {
+    stopUptimeTimer();
+    localAIStartTime = Date.now();
+    localAIUptimeTimer = setInterval(() => {
+        const el = document.getElementById('lmDetailUptime');
+        if (el && localAIStartTime) {
+            el.textContent = formatDuration(Date.now() - localAIStartTime);
+        }
+    }, 1000);
+}
+
+function stopUptimeTimer() {
+    if (localAIUptimeTimer) {
+        clearInterval(localAIUptimeTimer);
+        localAIUptimeTimer = null;
+    }
+    localAIStartTime = null;
+    const el = document.getElementById('lmDetailUptime');
+    if (el) el.textContent = '--';
+}
+
+// ---- 切换详情面板 ----
+function toggleModelDetail() {
+    localAIDetailVisible = !localAIDetailVisible;
+    const panel = document.getElementById('lmDetailPanel');
+    const btn   = document.getElementById('viewStatusBtn');
+    if (panel) panel.style.display = localAIDetailVisible ? 'block' : 'none';
+    if (btn) {
+        const textSpan = btn.querySelector('span') || btn;
+        // 替换按钮文字（保留 svg）
+        const svgHtml = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
+        btn.innerHTML = svgHtml + (localAIDetailVisible ? ' 收起查看' : ' 查看状态');
+    }
+    if (localAIDetailVisible) updateDetailPanel();
+}
+
+// ---- 切换日志终端 ----
+function toggleTerminal() {
+    localAITerminalVisible = !localAITerminalVisible;
+    const terminal = document.getElementById('localAITerminal');
+    const header   = document.querySelector('.lm-log-header');
+    if (terminal) terminal.style.display = localAITerminalVisible ? 'block' : 'none';
+    if (header)   header.classList.toggle('open', localAITerminalVisible);
 }
 
 // ---- 检查模型是否已存在 ----
@@ -1068,7 +1202,6 @@ function checkModelExists() {
     const pluginPath = getPluginPath();
     if (!pluginPath) return false;
     const modelDir = path.join(pluginPath, MODEL_DIR_NAME);
-    // 目录存在且非空视为已下载
     try {
         const files = fs.readdirSync(modelDir);
         return files.length > 0;
@@ -1077,16 +1210,18 @@ function checkModelExists() {
     }
 }
 
-// ---- 初始化端侧AI区域状态 ----
+// ---- 初始化本地模型区域 ----
 function initLocalAISection() {
     if (checkModelExists()) {
-        // 模型已存在
         dlState.status = 'done';
         setDownloadBtn('delete');
-        setLaunchBtnEnabled(true);
+        setInstalledTagVisible(true);
+        setRunStatusTag('idle'); // 初始显示未启动
+        setViewStatusBtnVisible(true);
         showProgressArea(false);
+        // 插件打开时自动启动模型
+        startLocalAI();
     } else {
-        // 检查是否有未完成的下载
         const saved = parseInt(localStorage.getItem(PROGRESS_KEY) || '0', 10);
         if (saved > 0) {
             dlState.downloaded = saved;
@@ -1094,25 +1229,26 @@ function initLocalAISection() {
             setDownloadBtn('resume');
             showProgressArea(true);
             setProgressLabel('下载已暂停');
-            setProgressBar(0); // total 未知，先显示0
+            setProgressBar(0);
             setProgressMeta(`已下载 ${formatBytes(saved)}`);
         } else {
             dlState.status = 'idle';
             setDownloadBtn('download');
             showProgressArea(false);
         }
-        setLaunchBtnEnabled(false);
+        setInstalledTagVisible(false);
+        setViewStatusBtnVisible(false);
     }
 }
 
 // ---- 下载按钮点击分发 ----
 function handleDownloadModelClick() {
     switch (dlState.status) {
-        case 'idle':       startDownload(); break;
-        case 'downloading':pauseDownload(); break;
-        case 'paused':     startDownload(); break;  // 续传
-        case 'unzip_failed': startUnzip(); break;
-        case 'done':       deleteModel(); break;
+        case 'idle':         startDownload(); break;
+        case 'downloading':  pauseDownload(); break;
+        case 'paused':       startDownload(); break;
+        case 'unzip_failed': startUnzip();    break;
+        case 'done':         deleteModel();   break;
         default: break;
     }
 }
@@ -1318,13 +1454,18 @@ Write-Output "DONE"
         showUnzipWarning(false);
         if (code === 0) {
             try { fs.unlinkSync(zipPath); } catch (e) { console.warn('删除zip失败:', e); }
+            // 记录安装时间
+            localStorage.setItem(INSTALL_TIME_KEY, new Date().toISOString());
             dlState.status = 'done';
             setProgressBar(100);
             setProgressLabel('解压完成');
             setProgressMeta('');
             setDownloadBtn('delete');
-            setLaunchBtnEnabled(true);
-            showNotification('模型已就绪，可以启动端侧 AI', 'success');
+            setInstalledTagVisible(true);
+            setViewStatusBtnVisible(true);
+            showNotification('模型已就绪，正在自动启动...', 'success');
+            // 解压完成后自动启动
+            startLocalAI();
         } else {
             dlState.status = 'unzip_failed';
             setProgressLabel('解压失败');
@@ -1347,13 +1488,15 @@ Write-Output "DONE"
 function deleteModel() {
     if (!confirm('确定要删除模型文件吗？删除后需要重新下载。')) return;
 
+    // 先停止运行中的模型
+    if (localAIRunning) stopLocalAI();
+
     const fs = require('fs');
     const path = require('path');
     const pluginPath = getPluginPath();
     const modelDir = path.join(pluginPath, MODEL_DIR_NAME);
 
     try {
-        // 递归删除目录
         fs.rmSync(modelDir, { recursive: true, force: true });
     } catch (e) {
         console.warn('删除模型目录失败:', e);
@@ -1363,10 +1506,19 @@ function deleteModel() {
     dlState.downloaded = 0;
     dlState.total = 0;
     localStorage.removeItem(PROGRESS_KEY);
+    localStorage.removeItem(INSTALL_TIME_KEY);
 
     setDownloadBtn('download');
     showProgressArea(false);
-    setLaunchBtnEnabled(false);
+    setInstalledTagVisible(false);
+    setViewStatusBtnVisible(false);
+    setRunStatusTag('idle');
+
+    // 隐藏详情面板
+    localAIDetailVisible = false;
+    const panel = document.getElementById('lmDetailPanel');
+    if (panel) panel.style.display = 'none';
+
     showNotification('模型已删除', 'success');
 }
 
@@ -1390,79 +1542,129 @@ function startLocalAI() {
 
     const terminalOutput = document.getElementById('terminalOutput');
     if (terminalOutput) {
-        terminalOutput.innerHTML = '<span class="terminal-line system">正在启动端侧 AI 服务...</span>\n';
+        terminalOutput.innerHTML = '<span class="terminal-line system">正在启动本地模型服务...</span>\n';
     }
+
+    // 更新状态为启动中
+    localAIRunStatus = 'starting';
+    localAIFailReason = '';
+    setRunStatusTag('starting');
+    updateLocalAIButton(true);
+    updateDetailRunStatus();
 
     try {
         localAIProcess = spawn(exePath, ['-c', configPath, '-l']);
         localAIRunning = true;
-        updateLocalAIButton(true);
+        // 不在这里启动计时器，等检测到运行中再启动
 
         localAIProcess.stdout.on('data', (data) => {
-            appendTerminalOutput(data.toString(), 'stdout');
+            const text = data.toString();
+            appendTerminalOutput(text, 'stdout');
+
+            // 检测到 "http://0.0.0.0" 视为运行中
+            if (localAIRunStatus === 'starting') {
+                if (text.includes('http://0.0.0.0')) {
+                    localAIRunStatus = 'running';
+                    startUptimeTimer(); // 运行中才开始计时
+                    setRunStatusTag('running');
+                    updateDetailRunStatus();
+                    showNotification('本地模型已就绪', 'success');
+                }
+            }
         });
 
         localAIProcess.stderr.on('data', (data) => {
-            appendTerminalOutput(data.toString(), 'stderr');
+            const text = data.toString();
+            appendTerminalOutput(text, 'stderr');
+
+            // stderr 里也可能有就绪信息
+            if (localAIRunStatus === 'starting') {
+                if (text.includes('http://0.0.0.0')) {
+                    localAIRunStatus = 'running';
+                    startUptimeTimer(); // 运行中才开始计时
+                    setRunStatusTag('running');
+                    updateDetailRunStatus();
+                }
+            }
+
+            // 检测明显错误
+            if (/error|failed|exception/i.test(text) && localAIRunStatus !== 'running') {
+                localAIFailReason = text.split('\n')[0].trim().slice(0, 100);
+            }
         });
 
         localAIProcess.on('close', (code) => {
             localAIRunning = false;
+            stopUptimeTimer();
+            if (code !== 0 && localAIRunStatus !== 'idle') {
+                localAIRunStatus = 'failed';
+                setRunStatusTag('failed', localAIFailReason);
+            } else {
+                localAIRunStatus = 'idle';
+                setRunStatusTag('idle');
+            }
             updateLocalAIButton(false);
+            updateDetailRunStatus();
             appendTerminalOutput(`进程已退出，退出码: ${code}`, 'system');
             localAIProcess = null;
         });
 
         localAIProcess.on('error', (err) => {
             localAIRunning = false;
+            stopUptimeTimer();
+            localAIRunStatus = 'failed';
+            localAIFailReason = err.message;
+            setRunStatusTag('failed');
             updateLocalAIButton(false);
+            updateDetailRunStatus();
             appendTerminalOutput(`启动失败: ${err.message}`, 'stderr');
             localAIProcess = null;
             showNotification('启动失败: ' + err.message, 'error');
         });
 
         appendTerminalOutput('服务启动中，请稍候...', 'system');
-        showNotification('端侧 AI 服务启动中...', 'info');
 
     } catch (error) {
-        console.error('启动端侧 AI 失败:', error);
+        localAIRunning = false;
+        stopUptimeTimer();
+        localAIRunStatus = 'failed';
+        localAIFailReason = error.message;
+        setRunStatusTag('failed');
+        updateLocalAIButton(false);
+        updateDetailRunStatus();
         appendTerminalOutput(`启动失败: ${error.message}`, 'stderr');
         showNotification('启动失败: ' + error.message, 'error');
-        updateLocalAIButton(false);
     }
 }
 
 // ---- 停止端侧 AI ----
 function stopLocalAI() {
-    if (!localAIProcess) {
-        showNotification('服务未运行', 'warning');
-        return;
-    }
+    if (!localAIProcess) return;
 
     try {
         const { exec } = require('child_process');
         exec(`taskkill /pid ${localAIProcess.pid} /T /F`, (error) => {
-            if (error) {
-                console.error('停止进程失败:', error);
-                localAIProcess.kill('SIGTERM');
-            }
+            if (error) localAIProcess && localAIProcess.kill('SIGTERM');
         });
 
         localAIRunning = false;
+        stopUptimeTimer();
+        localAIRunStatus = 'idle';
+        setRunStatusTag('idle');
         updateLocalAIButton(false);
+        updateDetailRunStatus();
         appendTerminalOutput('服务已停止', 'system');
-        showNotification('端侧 AI 服务已停止', 'success');
+        showNotification('本地模型已停止', 'success');
         localAIProcess = null;
 
     } catch (error) {
-        console.error('停止端侧 AI 失败:', error);
         showNotification('停止失败: ' + error.message, 'error');
     }
 }
 
-// ---- 更新启动按钮状态 ----
+// ---- 更新启动按钮外观 ----
 function updateLocalAIButton(running) {
-    const btn = document.getElementById('localAIBtn');
+    const btn     = document.getElementById('localAIBtn');
     const btnText = document.getElementById('localAIBtnText');
     const btnIcon = document.getElementById('localAIBtnIcon');
 
@@ -1507,3 +1709,5 @@ window.startLocalAI = startLocalAI;
 window.stopLocalAI = stopLocalAI;
 window.handleDownloadModelClick = handleDownloadModelClick;
 window.initLocalAISection = initLocalAISection;
+window.toggleModelDetail = toggleModelDetail;
+window.toggleTerminal = toggleTerminal;
