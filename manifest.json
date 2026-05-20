@@ -3,9 +3,9 @@
     "version": "1.3.0",
     "platform": "all",
     "arch": "all",
-    "name": "批量重命名注释打标 - MuseAI",
-    "description": "使用AI大模型为Eagle中的图片批量重命名、注释、打标签",
-    "logo": "/logo.png",
+    "name": "批量重命名注释打标 - MuseBox",
+    "description": "使用端侧大模型为Eagle中的素材批量重命名、注释、打标签",
+    "logo": "/logo2.png",
     "keywords": ["AI", "图片", "注释", "自动", "GPT", "图像理解", "标签", "重命名"],
     "devTools": false,
     "main": {
