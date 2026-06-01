@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>批量重命名注释打标 - MuseAI</title>
+    <title>批量重命名注释打标 - MuseBox</title>
     <link rel="stylesheet" href="js/ui.css">
 </head>
 <body>
@@ -303,6 +303,16 @@
                             <button class="btn btn-download-model" id="downloadModelBtn" onclick="handleDownloadModelClick()">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                                 <span id="downloadModelBtnText">下载</span>
+                            </button>
+                            <!-- 取消下载按钮（下载中/暂停时显示） -->
+                            <button class="btn btn-cancel-download" id="cancelDownloadBtn" onclick="cancelDownload()" style="display:none;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                取消
+                            </button>
+                            <!-- 导入模型按钮（idle 状态时显示） -->
+                            <button class="btn btn-import-model" id="importModelBtn" onclick="importLocalModel()">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                导入模型
                             </button>
                             <button class="btn btn-view-status" id="viewStatusBtn" onclick="toggleModelDetail()" style="display:none;">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>

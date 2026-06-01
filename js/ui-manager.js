@@ -1029,6 +1029,8 @@ function showUnzipWarning(show) {
 // ---- 下载按钮状态 ----
 function setDownloadBtn(state) {
     const btn = document.getElementById('downloadModelBtn');
+    const cancelBtn = document.getElementById('cancelDownloadBtn');
+    const importBtn = document.getElementById('importModelBtn');
     if (!btn) return;
 
     btn.disabled = false;
@@ -1056,6 +1058,15 @@ function setDownloadBtn(state) {
 
     if (state === 'unzipping') btn.disabled = true;
     if (state === 'delete') btn.classList.add('delete-mode');
+
+    // 取消按钮：下载中或暂停时显示
+    if (cancelBtn) {
+        cancelBtn.style.display = (state === 'pause' || state === 'resume') ? 'inline-flex' : 'none';
+    }
+    // 导入按钮：仅 idle 时显示
+    if (importBtn) {
+        importBtn.style.display = (state === 'download') ? 'inline-flex' : 'none';
+    }
 }
 
 // ---- 查看状态按钮显隐 ----
@@ -1386,6 +1397,107 @@ function pauseDownload() {
     setDownloadBtn('resume');
     setProgressLabel('已暂停');
     showNotification('下载已暂停', 'info');
+}
+
+// ---- 取消下载（删除已下载部分，回到 idle）----
+function cancelDownload() {
+    if (!confirm('确定取消下载？已下载的内容将被删除。')) return;
+
+    // 中断请求和写入流
+    if (dlState.request) {
+        dlState.request.destroy();
+        dlState.request = null;
+    }
+    if (dlState.fileStream) {
+        dlState.fileStream.end();
+        dlState.fileStream = null;
+    }
+
+    // 删除已下载的 zip 文件
+    try {
+        const fs   = require('fs');
+        const path = require('path');
+        const zipPath = path.join(getPluginPath(), MODEL_ZIP_NAME);
+        if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath);
+    } catch (e) {
+        console.warn('删除临时文件失败:', e);
+    }
+
+    // 清空进度记录
+    dlState.status = 'idle';
+    dlState.downloaded = 0;
+    dlState.total = 0;
+    localStorage.removeItem(PROGRESS_KEY);
+
+    setDownloadBtn('download');
+    showProgressArea(false);
+    showNotification('下载已取消', 'info');
+}
+
+// ---- 导入本地模型文件夹 ----
+async function importLocalModel() {
+    try {
+        // 用 Eagle dialog API 选择文件夹
+        const result = await eagle.dialog.showOpenDialog({
+            properties: ['openDirectory'],
+            title: '选择模型文件夹',
+            buttonLabel: '导入'
+        });
+
+        if (!result || result.canceled || !result.filePaths || result.filePaths.length === 0) return;
+
+        const srcDir  = result.filePaths[0];
+        const fs      = require('fs');
+        const path    = require('path');
+        const destDir = path.join(getPluginPath(), MODEL_DIR_NAME);
+
+        // 检查源目录是否包含 config.json（基本校验）
+        const configFile = path.join(srcDir, 'config.json');
+        if (!fs.existsSync(configFile)) {
+            showNotification('所选文件夹不包含 config.json，请确认是否为正确的模型目录', 'error');
+            return;
+        }
+
+        showNotification('正在导入模型文件夹...', 'info');
+
+        // 如果目标目录已存在先删除
+        if (fs.existsSync(destDir)) {
+            fs.rmSync(destDir, { recursive: true, force: true });
+        }
+
+        // 递归复制文件夹
+        const copyDir = (src, dest) => {
+            fs.mkdirSync(dest, { recursive: true });
+            for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+                const srcPath  = path.join(src, entry.name);
+                const destPath = path.join(dest, entry.name);
+                if (entry.isDirectory()) {
+                    copyDir(srcPath, destPath);
+                } else {
+                    fs.copyFileSync(srcPath, destPath);
+                }
+            }
+        };
+
+        copyDir(srcDir, destDir);
+
+        // 记录安装时间
+        localStorage.setItem(INSTALL_TIME_KEY, new Date().toISOString());
+
+        dlState.status = 'done';
+        setDownloadBtn('delete');
+        setInstalledTagVisible(true);
+        setRunStatusTag('idle');
+        setViewStatusBtnVisible(true);
+        showProgressArea(false);
+
+        showNotification('模型导入成功，正在自动启动...', 'success');
+        startLocalAI();
+
+    } catch (error) {
+        console.error('导入模型失败:', error);
+        showNotification('导入失败: ' + error.message, 'error');
+    }
 }
 
 // ---- 解压 ----
@@ -1729,3 +1841,5 @@ window.handleDownloadModelClick = handleDownloadModelClick;
 window.initLocalAISection = initLocalAISection;
 window.toggleModelDetail = toggleModelDetail;
 window.toggleTerminal = toggleTerminal;
+window.cancelDownload = cancelDownload;
+window.importLocalModel = importLocalModel;
